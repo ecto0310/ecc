@@ -35,6 +35,7 @@ bool next_token(Token **token);
 
 Node *expr(char *source, Token **token);
 Node *mul(char *source, Token **token);
+Node *unary(char *source, Token **token);
 Node *primary(char *source, Token **token);
 
 #endif  // SRC_PARSE_H_

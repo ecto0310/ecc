@@ -78,18 +78,26 @@ Node *expr(char *source, Token **token) {
 }
 
 Node *mul(char *source, Token **token) {
-  Node *node = primary(source, token);
+  Node *node = unary(source, token);
 
   while (is_next_token(token)) {
     if (consume_char(token, '*')) {
-      node = new_node(ND_MUL, node, primary(source, token));
+      node = new_node(ND_MUL, node, unary(source, token));
     } else if (consume_char(token, '/')) {
-      node = new_node(ND_DIV, node, primary(source, token));
+      node = new_node(ND_DIV, node, unary(source, token));
     } else {
       break;
     }
   }
   return node;
+}
+
+Node *unary(char *source, Token **token) {
+  if (consume_char(token,'+'))
+    return primary(source, token);
+  if (consume_char(token,'-'))
+    return new_node(ND_SUB, new_node_number(0), unary(source, token));
+  return primary(source, token);
 }
 
 Node *primary(char *source, Token **token) {
