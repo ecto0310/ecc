@@ -9,4 +9,4 @@ add_executable(
 
 enable_testing()
 
-add_test(NAME sample_test COMMAND ${PROJECT_SOURCE_DIR}/test/sample_test.sh)
+add_test(NAME sample_test COMMAND ${PROJECT_SOURCE_DIR}/test/test.sh)
