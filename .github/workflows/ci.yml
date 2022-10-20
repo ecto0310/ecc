@@ -52,6 +52,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review
+          filter: "-legal/copyright,-build/include_subdir"
 
   actionlint:
     runs-on: ubuntu-latest
