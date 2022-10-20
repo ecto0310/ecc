@@ -9,10 +9,14 @@ void error_at(char *source, char *location, char *message, ...) {
   va_start(ap, message);
 
   char *line_begin = location;
-  while (source < line_begin && line_begin[-1] != '\n') line_begin--;
+  while (source < line_begin && line_begin[-1] != '\n') {
+    line_begin--;
+  }
 
   char *line_end = location;
-  while (*line_end != '\n') line_end++;
+  while (*line_end != '\n') {
+    line_end++;
+  }
 
   int line = 1;
   for (char *p = source; p < line_begin; p++) {

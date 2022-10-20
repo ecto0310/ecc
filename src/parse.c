@@ -15,7 +15,9 @@ Node *parse(char *source, Token **token) {
 }
 
 bool consume_char(Token **token, char op) {
-  if ((*token)->kind != TK_KEYWORD || (*token)->str[0] != op) return false;
+  if ((*token)->kind != TK_KEYWORD || (*token)->str[0] != op) {
+    return false;
+  }
   next_token(token);
   return true;
 }
@@ -93,10 +95,12 @@ Node *mul(char *source, Token **token) {
 }
 
 Node *unary(char *source, Token **token) {
-  if (consume_char(token,'+'))
+  if (consume_char(token, '+')) {
     return primary(source, token);
-  if (consume_char(token,'-'))
+  }
+  if (consume_char(token, '-')) {
     return new_node(ND_SUB, new_node_number(0), unary(source, token));
+  }
   return primary(source, token);
 }
 

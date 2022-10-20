@@ -35,19 +35,19 @@ void generate(FILE *fp, Node *node) {
   fprintf(fp, "\tpop rax\n");
 
   switch (node->kind) {
-    case ND_ADD:
-      fprintf(fp, "\tadd rax, rdi\n");
-      break;
-    case ND_SUB:
-      fprintf(fp, "\tsub rax, rdi\n");
-      break;
-    case ND_MUL:
-      fprintf(fp, "\timul rax, rdi\n");
-      break;
-    case ND_DIV:
-      fprintf(fp, "\tcqo\n");
-      fprintf(fp, "\tidiv rdi\n");
-      break;
+  case ND_ADD:
+    fprintf(fp, "\tadd rax, rdi\n");
+    break;
+  case ND_SUB:
+    fprintf(fp, "\tsub rax, rdi\n");
+    break;
+  case ND_MUL:
+    fprintf(fp, "\timul rax, rdi\n");
+    break;
+  case ND_DIV:
+    fprintf(fp, "\tcqo\n");
+    fprintf(fp, "\tidiv rdi\n");
+    break;
   }
 
   fprintf(fp, "\tpush rax\n");
