@@ -18,7 +18,14 @@ Token *tokenize(char *source) {
       continue;
     }
 
-    if (strchr("+-*/()", *p)) {
+    if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") ||
+        startswith(p, ">=")) {
+      current = new_token(TK_KEYWORD, current, p, 2);
+      p += 2;
+      continue;
+    }
+
+    if (strchr("+-*/()<>", *p)) {
       current = new_token(TK_KEYWORD, current, p, 1);
       p += 1;
       continue;
@@ -47,3 +54,5 @@ Token *new_token(TokenKind kind, Token *current, char *str, int len) {
   current->next = token;
   return token;
 }
+
+bool startswith(char *p, char *q) { return memcmp(p, q, strlen(q)) == 0; }

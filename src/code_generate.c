@@ -35,19 +35,38 @@ void generate(FILE *fp, Node *node) {
   fprintf(fp, "\tpop rax\n");
 
   switch (node->kind) {
-  case ND_ADD:
-    fprintf(fp, "\tadd rax, rdi\n");
-    break;
-  case ND_SUB:
-    fprintf(fp, "\tsub rax, rdi\n");
-    break;
-  case ND_MUL:
-    fprintf(fp, "\timul rax, rdi\n");
-    break;
-  case ND_DIV:
-    fprintf(fp, "\tcqo\n");
-    fprintf(fp, "\tidiv rdi\n");
-    break;
+    case ND_ADD:
+      fprintf(fp, "\tadd rax, rdi\n");
+      break;
+    case ND_SUB:
+      fprintf(fp, "\tsub rax, rdi\n");
+      break;
+    case ND_MUL:
+      fprintf(fp, "\timul rax, rdi\n");
+      break;
+    case ND_DIV:
+      fprintf(fp, "\tcqo\n");
+      fprintf(fp, "\tidiv rdi\n");
+      break;
+    case ND_EQ:
+      fprintf(fp, "\tcmp rax, rdi\n");
+      fprintf(fp, "\tsete al\n");
+      fprintf(fp, "\tmovzb rax, al\n");
+      break;
+    case ND_NE:
+      fprintf(fp, "\tcmp rax, rdi\n");
+      fprintf(fp, "\tsetne al\n");
+      fprintf(fp, "\tmovzb rax, al\n");
+      break;
+    case ND_LT:
+      fprintf(fp, "\tcmp rax, rdi\n");
+      fprintf(fp, "\tsetl al\n");
+      fprintf(fp, "\tmovzb rax, al\n");
+      break;
+    case ND_LE:
+      fprintf(fp, "\tcmp rax, rdi\n");
+      fprintf(fp, "\tsetle al\n");
+      fprintf(fp, "\tmovzb rax, al\n");
   }
 
   fprintf(fp, "\tpush rax\n");

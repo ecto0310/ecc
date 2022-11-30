@@ -20,5 +20,6 @@ struct Token {
 
 Token *tokenize(char *source);
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
+bool startswith(char *p, char *q);
 
 #endif  // SRC_TOKENIZE_H_

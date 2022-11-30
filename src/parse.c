@@ -68,7 +68,47 @@ bool next_token(Token **token) {
   return true;
 }
 
+
 Node *expr(char *source, Token **token) {
+  Node *node = equality(source, token);
+  return node;
+}
+
+Node *equality(char *source, Token **token) {
+  Node *node = relational(source, token);
+
+  while (is_next_token(token)) {
+    if (consume_char(token, "==")) {
+      node = new_node(ND_EQ, node, relational(source, token));
+    } else if (consume_char(token, "!=")) {
+      node = new_node(ND_NE, node, relational(source, token));
+    } else {
+      break;
+    }
+  }
+  return node;
+}
+
+Node *relational(char *source, Token **token) {
+  Node *node = add(source, token);
+
+  while (is_next_token(token)) {
+    if (consume_char(token, "<")) {
+      node = new_node(ND_LT, node, add(source, token));
+    } else if (consume_char(token, "<=")) {
+      node = new_node(ND_LE, node, add(source, token));
+    } else if (consume_char(token, ">")) {
+      node = new_node(ND_LT, add(source, token), node);
+    } else if (consume_char(token, ">=")) {
+      node = new_node(ND_LE, add(source, token), node);
+    } else {
+      break;
+    }
+  }
+  return node;
+}
+
+Node *add(char *source, Token **token) {
   Node *node = mul(source, token);
 
   while (is_next_token(token)) {

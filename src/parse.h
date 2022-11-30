@@ -6,11 +6,15 @@
 #include "tokenize.h"
 
 typedef enum {
-  ND_ADD,
-  ND_SUB,
-  ND_MUL,
-  ND_DIV,
-  ND_NUM,
+  ND_ADD,  // +
+  ND_SUB,  // -
+  ND_MUL,  // *
+  ND_DIV,  // /
+  ND_EQ,   // ==
+  ND_NE,   // !=
+  ND_LT,   // <
+  ND_LE,   // <=
+  ND_NUM,  // Integer
 } NodeKind;
 
 typedef struct Node Node;
@@ -34,6 +38,9 @@ bool is_next_token(Token **token);
 bool next_token(Token **token);
 
 Node *expr(char *source, Token **token);
+Node *equality(char *source, Token **token);
+Node *relational(char *source, Token **token);
+Node *add(char *source, Token **token);
 Node *mul(char *source, Token **token);
 Node *unary(char *source, Token **token);
 Node *primary(char *source, Token **token);
