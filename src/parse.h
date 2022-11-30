@@ -23,8 +23,8 @@ struct Node {
 
 Node *parse(char *source, Token **token);
 
-bool consume_char(Token **token, char op);
-void expect_char(char *source, Token **token, char op);
+bool consume_char(Token **token, char *op);
+void expect_char(char *source, Token **token, char *op);
 int expect_number(char *source, Token **token);
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);

@@ -1,7 +1,9 @@
 #include "parse.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "error.h"
 #include "tokenize.h"
@@ -14,16 +16,18 @@ Node *parse(char *source, Token **token) {
   return node;
 }
 
-bool consume_char(Token **token, char op) {
-  if ((*token)->kind != TK_KEYWORD || (*token)->str[0] != op) {
+bool consume_char(Token **token, char *op) {
+  if ((*token)->kind != TK_KEYWORD || strlen(op) != (*token)->len ||
+      memcmp((*token)->str, op, (*token)->len)) {
     return false;
   }
   next_token(token);
   return true;
 }
 
-void expect_char(char *source, Token **token, char op) {
-  if ((*token)->kind != TK_KEYWORD || (*token)->str[0] != op) {
+void expect_char(char *source, Token **token, char *op) {
+  if ((*token)->kind != TK_KEYWORD || strlen(op) != (*token)->len ||
+      memcmp((*token)->str, op, (*token)->len)) {
     error_at(source, (*token)->str, "'%c'ではありません", op);
   }
   next_token(token);
@@ -68,9 +72,9 @@ Node *expr(char *source, Token **token) {
   Node *node = mul(source, token);
 
   while (is_next_token(token)) {
-    if (consume_char(token, '+')) {
+    if (consume_char(token, "+")) {
       node = new_node(ND_ADD, node, mul(source, token));
-    } else if (consume_char(token, '-')) {
+    } else if (consume_char(token, "-")) {
       node = new_node(ND_SUB, node, mul(source, token));
     } else {
       break;
@@ -83,9 +87,9 @@ Node *mul(char *source, Token **token) {
   Node *node = unary(source, token);
 
   while (is_next_token(token)) {
-    if (consume_char(token, '*')) {
+    if (consume_char(token, "*")) {
       node = new_node(ND_MUL, node, unary(source, token));
-    } else if (consume_char(token, '/')) {
+    } else if (consume_char(token, "/")) {
       node = new_node(ND_DIV, node, unary(source, token));
     } else {
       break;
@@ -95,19 +99,19 @@ Node *mul(char *source, Token **token) {
 }
 
 Node *unary(char *source, Token **token) {
-  if (consume_char(token, '+')) {
+  if (consume_char(token, "+")) {
     return primary(source, token);
   }
-  if (consume_char(token, '-')) {
+  if (consume_char(token, "-")) {
     return new_node(ND_SUB, new_node_number(0), unary(source, token));
   }
   return primary(source, token);
 }
 
 Node *primary(char *source, Token **token) {
-  if (consume_char(token, '(')) {
+  if (consume_char(token, "(")) {
     Node *node = expr(source, token);
-    expect_char(source, token, ')');
+    expect_char(source, token, ")");
     return node;
   }
   return new_node_number(expect_number(source, token));

@@ -1,6 +1,8 @@
 #ifndef SRC_TOKENIZE_H_
 #define SRC_TOKENIZE_H_
 
+#include <stdbool.h>
+
 typedef enum {
   TK_KEYWORD,
   TK_NUM,
@@ -13,9 +15,10 @@ struct Token {
   Token *next;
   int val;
   char *str;
+  int len;
 };
 
 Token *tokenize(char *source);
-Token *new_token(TokenKind kind, Token *cur, char *str);
+Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 
 #endif  // SRC_TOKENIZE_H_
