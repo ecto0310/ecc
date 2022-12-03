@@ -20,13 +20,19 @@ Token *tokenize(char *source) {
 
     if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") ||
         startswith(p, ">=")) {
-      current = new_token(TK_KEYWORD, current, p, 2);
+      current = new_token(TK_PUNC, current, p, 2);
       p += 2;
       continue;
     }
 
-    if (strchr("+-*/()<>", *p)) {
-      current = new_token(TK_KEYWORD, current, p, 1);
+    if (strchr("+-*/()<>=;", *p)) {
+      current = new_token(TK_PUNC, current, p, 1);
+      p += 1;
+      continue;
+    }
+
+    if ('a' <= *p && *p <= 'z') {
+      current = new_token(TK_ID, current, p++, 1);
       p += 1;
       continue;
     }

@@ -17,7 +17,7 @@ Node *parse(char *source, Token **token) {
 }
 
 bool consume_char(Token **token, char *op) {
-  if ((*token)->kind != TK_KEYWORD || strlen(op) != (*token)->len ||
+  if ((*token)->kind != TK_PUNC || strlen(op) != (*token)->len ||
       memcmp((*token)->str, op, (*token)->len)) {
     return false;
   }
@@ -26,7 +26,7 @@ bool consume_char(Token **token, char *op) {
 }
 
 void expect_char(char *source, Token **token, char *op) {
-  if ((*token)->kind != TK_KEYWORD || strlen(op) != (*token)->len ||
+  if ((*token)->kind != TK_PUNC || strlen(op) != (*token)->len ||
       memcmp((*token)->str, op, (*token)->len)) {
     error_at(source, (*token)->str, "'%c'ではありません", op);
   }
