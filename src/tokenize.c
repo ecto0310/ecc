@@ -12,7 +12,8 @@ Token *tokenize(char *source) {
   Token head = {next : NULL};
   Token *current = &head;
 
-  for (char *p = source; *p != '\0';) {
+  char *p = source;
+  for (; *p != '\0';) {
     if (isspace(*p)) {
       p++;
       continue;
@@ -45,10 +46,10 @@ Token *tokenize(char *source) {
       continue;
     }
 
-    error_at(source, p, "invalid token");
+    error_at(source, source, "invalid token");
   }
 
-  new_token(TK_EOF, current, NULL, 0);
+  new_token(TK_EOF, current, p, 0);
   return head.next;
 }
 

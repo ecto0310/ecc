@@ -20,23 +20,15 @@ typedef enum {
 typedef struct Node Node;
 struct Node {
   NodeKind kind;
+  Node *next;
   Node *lhs;
   Node *rhs;
   int value;
 };
 
 Node *parse(char *source, Token **token);
-
-bool consume_char(Token **token, char *op);
-void expect_char(char *source, Token **token, char *op);
-int expect_number(char *source, Token **token);
-
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
-Node *new_node_number(int value);
-
-bool is_next_token(Token **token);
-bool next_token(Token **token);
-
+Node *program(char *source, Token **token);
+Node *statement(char *source, Token **token);
 Node *expr(char *source, Token **token);
 Node *equality(char *source, Token **token);
 Node *relational(char *source, Token **token);

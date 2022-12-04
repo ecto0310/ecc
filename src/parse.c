@@ -6,68 +6,26 @@
 #include <string.h>
 
 #include "error.h"
+#include "parse_util.h"
 #include "tokenize.h"
 
 Node *parse(char *source, Token **token) {
-  Node *node = expr(source, token);
+  Node *node = program(source, token);
   if (is_next_token(token)) {
     error_at(source, (*token)->str, "不明なトークンです");
   }
   return node;
 }
-
-bool consume_char(Token **token, char *op) {
-  if ((*token)->kind != TK_PUNC || strlen(op) != (*token)->len ||
-      memcmp((*token)->str, op, (*token)->len)) {
-    return false;
-  }
-  next_token(token);
-  return true;
-}
-
-void expect_char(char *source, Token **token, char *op) {
-  if ((*token)->kind != TK_PUNC || strlen(op) != (*token)->len ||
-      memcmp((*token)->str, op, (*token)->len)) {
-    error_at(source, (*token)->str, "'%c'ではありません", op);
-  }
-  next_token(token);
-  return;
-}
-
-int expect_number(char *source, Token **token) {
-  if ((*token)->kind != TK_NUM) {
-    error_at(source, (*token)->str, "数ではありません");
-  }
-  int value = (*token)->val;
-  next_token(token);
-  return value;
-}
-
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = kind;
-  node->lhs = lhs;
-  node->rhs = rhs;
+Node *program(char *source, Token **token) {
+  Node *node = statement(source, token);
   return node;
 }
 
-Node *new_node_number(int value) {
-  Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_NUM;
-  node->value = value;
+Node *statement(char *source, Token **token) {
+  Node *node = expr(source, token);
+  expect_char(source, token, ";");
   return node;
 }
-
-bool is_next_token(Token **token) { return (*token)->kind != TK_EOF; }
-
-bool next_token(Token **token) {
-  if (!is_next_token(token)) {
-    return false;
-  }
-  *token = (*token)->next;
-  return true;
-}
-
 
 Node *expr(char *source, Token **token) {
   Node *node = equality(source, token);
