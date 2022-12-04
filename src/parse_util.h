@@ -3,15 +3,17 @@
 
 #include <stdbool.h>
 
-#include "tokenize.h"
 #include "parse.h"
+#include "tokenize.h"
 
-bool consume_char(Token **token, char *op);
-void expect_char(char *source, Token **token, char *op);
-int expect_number(char *source, Token **token);
+Token *consume_char(Token **token, char *op);
+Token *expect_char(char *source, Token **token, char *op);
+Token *expect_number(char *source, Token **token);
+Token *consume_id(char *source, Token **token);
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_number(int value);
+Node *new_node_id(char *id);
 
 bool is_next_token(Token **token);
 bool next_token(Token **token);

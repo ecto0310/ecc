@@ -7,5 +7,6 @@
 
 void code_generate(char *path, Node *node);
 void generate(FILE *fp, Node *node);
+void generate_lval(FILE *fp, Node *node);
 
 #endif  // SRC_CODE_GENERATE_H_

@@ -33,7 +33,7 @@ Token *tokenize(char *source) {
     }
 
     if ('a' <= *p && *p <= 'z') {
-      current = new_token(TK_ID, current, p++, 1);
+      current = new_token(TK_ID, current, p, 1);
       p += 1;
       continue;
     }

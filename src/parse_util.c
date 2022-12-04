@@ -5,36 +5,48 @@
 
 #include "error.h"
 
-bool consume_char(Token **token, char *op) {
-  if ((*token)->kind != TK_PUNC || strlen(op) != (*token)->len ||
-      memcmp((*token)->str, op, (*token)->len)) {
-    return false;
+Token *consume_char(Token **token, char *op) {
+  Token *now = *token;
+  if (now->kind != TK_PUNC || strlen(op) != now->len ||
+      memcmp(now->str, op, now->len)) {
+    return NULL;
   }
   next_token(token);
-  return true;
+  return now;
 }
 
-void expect_char(char *source, Token **token, char *op) {
-  if ((*token)->kind != TK_PUNC || strlen(op) != (*token)->len ||
-      memcmp((*token)->str, op, (*token)->len)) {
-    error_at(source, (*token)->str, "'%s'ではありません", op);
+Token *expect_char(char *source, Token **token, char *op) {
+  Token *now = *token;
+  if (now->kind != TK_PUNC || strlen(op) != now->len ||
+      memcmp(now->str, op, now->len)) {
+    error_at(source, now->str, "'%s'ではありません", op);
   }
   next_token(token);
-  return;
+  return now;
 }
 
-int expect_number(char *source, Token **token) {
-  if ((*token)->kind != TK_NUM) {
-    error_at(source, (*token)->str, "数ではありません");
+Token *expect_number(char *source, Token **token) {
+  Token *now = *token;
+  if (now->kind != TK_NUM) {
+    error_at(source, now->str, "数ではありません");
   }
-  int value = (*token)->val;
   next_token(token);
-  return value;
+  return now;
+}
+
+Token *consume_id(char *source, Token **token) {
+  Token *now = *token;
+  if (now->kind != TK_ID) {
+    return NULL;
+  }
+  next_token(token);
+  return now;
 }
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
+  node->next = NULL;
   node->lhs = lhs;
   node->rhs = rhs;
   return node;
@@ -43,7 +55,16 @@ Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
 Node *new_node_number(int value) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = ND_NUM;
+  node->next = NULL;
   node->value = value;
+  return node;
+}
+
+Node *new_node_id(char *id) {
+  Node *node = calloc(1, sizeof(Node));
+  node->kind = ND_LVAR;
+  node->next = NULL;
+  node->offset = (id[0] - 'a' + 1) * 8;
   return node;
 }
 
