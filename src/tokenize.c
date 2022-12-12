@@ -32,9 +32,11 @@ Token *tokenize(char *source) {
       continue;
     }
 
-    if ('a' <= *p && *p <= 'z') {
-      current = new_token(TK_ID, current, p, 1);
+    if (isalpha(*p)) {
+      char *p_tmp = p;
       p += 1;
+      while (isalnum(*p)) p += 1;
+      current = new_token(TK_ID, current, p_tmp, p - p_tmp);
       continue;
     }
 
