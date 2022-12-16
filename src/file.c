@@ -21,12 +21,8 @@ char *read_file(char *path) {
     error("Failed to seek %s's begin: %s", path, strerror(errno));
   }
 
-  char *buf = calloc(1, size + 2);
+  char *buf = calloc(1, size + 1);
   fread(buf, size, 1, fp);
-
-  if (size == 0 || buf[size - 1] != '\n') {
-    buf[size++] = '\n';
-  }
   buf[size] = '\0';
   fclose(fp);
   return buf;

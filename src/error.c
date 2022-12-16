@@ -14,7 +14,7 @@ void error_at(char *source, char *location, char *message, ...) {
   }
 
   char *line_end = location;
-  while (*line_end != '\n') {
+  while (*line_end != '\n' && *line_end != '\0') {
     line_end++;
   }
 

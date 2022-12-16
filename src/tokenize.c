@@ -12,7 +12,8 @@ Token *tokenize(char *source) {
   Token head = {next : NULL};
   Token *current = &head;
 
-  for (char *p = source; *p != '\0';) {
+  char *p = source;
+  for (; *p != '\0';) {
     if (isspace(*p)) {
       p++;
       continue;
@@ -20,14 +21,22 @@ Token *tokenize(char *source) {
 
     if (startswith(p, "==") || startswith(p, "!=") || startswith(p, "<=") ||
         startswith(p, ">=")) {
-      current = new_token(TK_KEYWORD, current, p, 2);
+      current = new_token(TK_PUNC, current, p, 2);
       p += 2;
       continue;
     }
 
-    if (strchr("+-*/()<>", *p)) {
-      current = new_token(TK_KEYWORD, current, p, 1);
+    if (strchr("+-*/()<>=;", *p)) {
+      current = new_token(TK_PUNC, current, p, 1);
       p += 1;
+      continue;
+    }
+
+    if (isalpha(*p)) {
+      char *p_tmp = p;
+      p += 1;
+      while (isalnum(*p)) p += 1;
+      current = new_token(TK_ID, current, p_tmp, p - p_tmp);
       continue;
     }
 
@@ -42,7 +51,7 @@ Token *tokenize(char *source) {
     error_at(source, p, "invalid token");
   }
 
-  new_token(TK_EOF, current, NULL, 0);
+  new_token(TK_EOF, current, p, 0);
   return head.next;
 }
 

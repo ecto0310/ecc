@@ -4,9 +4,10 @@
 #include <stdbool.h>
 
 typedef enum {
-  TK_KEYWORD,
-  TK_NUM,
-  TK_EOF,
+  TK_PUNC,  // punctuator
+  TK_ID,    // identifier
+  TK_NUM,   // number
+  TK_EOF,   // end of file
 } TokenKind;
 
 typedef struct Token Token;
