@@ -48,7 +48,7 @@ Token *tokenize(char *source) {
       continue;
     }
 
-    error_at(source, source, "invalid token");
+    error_at(source, p, "invalid token");
   }
 
   new_token(TK_EOF, current, p, 0);
