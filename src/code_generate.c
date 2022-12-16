@@ -7,7 +7,7 @@
 
 #include "error.h"
 
-void code_generate(char *path, Node *node) {
+void code_generate(char *path, Program *program) {
   FILE *fp = fopen(path, "w");
   if (fp == NULL) {
     error("Can't open %s: %s", path, strerror(errno));
@@ -18,12 +18,12 @@ void code_generate(char *path, Node *node) {
 
   fprintf(fp, "\tpush rbp\n");
   fprintf(fp, "\tmov rbp, rsp\n");
-  fprintf(fp, "\tsub rsp, 208\n");
+  fprintf(fp, "\tsub rsp, %d\n", program->stack_size);
 
-  for (; node != NULL; node = node->next) {
+  for (Node *node = program->node; node != NULL; node = node->next) {
     generate(fp, node);
     fprintf(fp, "\tpop rax\n\n");
-  }
+  };
 
   fprintf(fp, "\tmov rsp, rbp\n");
   fprintf(fp, "\tpop rbp\n");
@@ -35,20 +35,16 @@ void generate(FILE *fp, Node *node) {
     case ND_NUM:
       fprintf(fp, "\tpush %d\n", node->value);
       return;
-    case ND_LVAR:
-      generate_lval(fp, node);
-      fprintf(fp, "\tpop rax\n");
-      fprintf(fp, "\tmov rax, [rax]\n");
-      fprintf(fp, "\tpush rax\n");
+    case ND_VAR:
+      generate_variable(fp, node);
+
+      load_memory(fp);
       return;
     case ND_ASSIGN:
-      generate_lval(fp, node->lhs);
+      generate_variable(fp, node->lhs);
       generate(fp, node->rhs);
 
-      fprintf(fp, "\tpop rdi\n");
-      fprintf(fp, "\tpop rax\n");
-      fprintf(fp, "\tmov [rax], rdi\n");
-      fprintf(fp, "\tpush rdi\n");
+      store_memory(fp);
       return;
   }
 
@@ -96,12 +92,26 @@ void generate(FILE *fp, Node *node) {
   fprintf(fp, "\tpush rax\n");
 }
 
-void generate_lval(FILE *fp, Node *node) {
-  if (node->kind != ND_LVAR) {
-    error("代入の左辺値が変数ではありません");
+void generate_variable(FILE *fp, Node *node) {
+  if (node->kind == ND_VAR) {
+    fprintf(fp, "\tmov rax, rbp\n");
+    fprintf(fp, "\tsub rax, %d\n", node->variable->offset);
+    fprintf(fp, "\tpush rax\n");
+    return;
   }
 
-  fprintf(fp, "\tmov rax, rbp\n");
-  fprintf(fp, "\tsub rax, %d\n", node->offset);
+  error("代入の左辺値が変数ではありません");
+}
+
+void load_memory(FILE *fp) {
+  fprintf(fp, "\tpop rax\n");
+  fprintf(fp, "\tmov rax, [rax]\n");
   fprintf(fp, "\tpush rax\n");
+}
+
+void store_memory(FILE *fp) {
+  fprintf(fp, "\tpop rdi\n");
+  fprintf(fp, "\tpop rax\n");
+  fprintf(fp, "\tmov [rax], rdi\n");
+  fprintf(fp, "\tpush rdi\n");
 }
