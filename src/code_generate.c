@@ -23,7 +23,7 @@ void code_generate(char *path, Program *program) {
   for (Node *node = program->node; node != NULL; node = node->next) {
     generate(fp, node);
     fprintf(fp, "\tpop rax\n\n");
-  };
+  }
 
   fprintf(fp, "\tmov rsp, rbp\n");
   fprintf(fp, "\tpop rbp\n");
