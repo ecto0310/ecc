@@ -13,9 +13,12 @@ Token *consume_id(char *source, Token **token);
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 Node *new_node_number(int value);
-Node *new_node_id(char *id);
+Node *new_node_variable(Variable *variable);
 
 bool is_next_token(Token **token);
 bool next_token(Token **token);
+
+Variable *find_variable(Token *token, Variable **variable);
+Variable *push_variable(Token *token, Variable **variable);
 
 #endif  // SRC_PARSE_UTIL_H_

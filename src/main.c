@@ -10,9 +10,9 @@ int main(int argc, char **argv) {
 
   Token *token = tokenize(source);
 
-  Node *node = parse(source, &token);
+  Program *program = parse(source, &token);
 
-  code_generate(argv[2], node);
+  code_generate(argv[2], program);
 
   return 0;
 }

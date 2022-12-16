@@ -60,11 +60,11 @@ Node *new_node_number(int value) {
   return node;
 }
 
-Node *new_node_id(char *id) {
+Node *new_node_variable(Variable *variable) {
   Node *node = calloc(1, sizeof(Node));
-  node->kind = ND_LVAR;
+  node->kind = ND_VAR;
   node->next = NULL;
-  node->offset = (id[0] - 'a' + 1) * 8;
+  node->variable = variable;
   return node;
 }
 
@@ -76,4 +76,21 @@ bool next_token(Token **token) {
   }
   *token = (*token)->next;
   return true;
+}
+
+Variable *find_variable(Token *token, Variable **variable) {
+  for (Variable *now = (*variable); now != NULL; now = now->next) {
+    if (strlen(now->name) == token->len &&
+        !memcmp(token->str, now->name, token->len))
+      return now;
+  }
+  return NULL;
+}
+
+Variable *push_variable(Token *token, Variable **variable) {
+  Variable *new_variable = calloc(1, sizeof(Variable));
+  new_variable->next = (*variable);
+  new_variable->name = strndup(token->str, token->len);
+  *variable = new_variable;
+  return new_variable;
 }
