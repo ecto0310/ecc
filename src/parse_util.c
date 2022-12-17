@@ -8,7 +8,7 @@
 Token *consume_char(Token **token, char *op) {
   Token *now = *token;
   if (now->kind != TK_PUNC || strlen(op) != now->len ||
-      memcmp(now->str, op, now->len)) {
+      strncmp(now->str, op, now->len)) {
     return NULL;
   }
   next_token(token);
@@ -18,7 +18,7 @@ Token *consume_char(Token **token, char *op) {
 Token *expect_char(char *source, Token **token, char *op) {
   Token *now = *token;
   if (now->kind != TK_PUNC || strlen(op) != now->len ||
-      memcmp(now->str, op, now->len)) {
+      strncmp(now->str, op, now->len)) {
     error_at(source, now->str, "'%s'ではありません", op);
   }
   next_token(token);
