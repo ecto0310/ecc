@@ -6,41 +6,37 @@
 #include "error.h"
 
 Token *consume_char(Token **token, char *op) {
-  Token *now = *token;
-  if (now->kind != TK_PUNC || strlen(op) != now->len ||
-      strncmp(now->str, op, now->len)) {
+  if ((*token)->kind != TK_PUNC || strlen(op) != (*token)->len ||
+      strncmp((*token)->str, op, (*token)->len)) {
     return NULL;
   }
   next_token(token);
-  return now;
+  return (*token);
 }
 
 Token *expect_char(char *source, Token **token, char *op) {
-  Token *now = *token;
-  if (now->kind != TK_PUNC || strlen(op) != now->len ||
-      strncmp(now->str, op, now->len)) {
-    error_at(source, now->str, "'%s'ではありません", op);
+  if ((*token)->kind != TK_PUNC || strlen(op) != (*token)->len ||
+      strncmp((*token)->str, op, (*token)->len)) {
+    error_at(source, (*token)->str, "'%s'ではありません", op);
   }
   next_token(token);
-  return now;
+  return (*token);
 }
 
 Token *expect_number(char *source, Token **token) {
-  Token *now = *token;
-  if (now->kind != TK_NUM) {
-    error_at(source, now->str, "数ではありません");
+  if ((*token)->kind != TK_NUM) {
+    error_at(source, (*token)->str, "数ではありません");
   }
   next_token(token);
-  return now;
+  return (*token);
 }
 
 Token *consume_id(char *source, Token **token) {
-  Token *now = *token;
-  if (now->kind != TK_ID) {
+  if ((*token)->kind != TK_ID) {
     return NULL;
   }
   next_token(token);
-  return now;
+  return (*token);
 }
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
