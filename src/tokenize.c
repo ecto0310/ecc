@@ -64,4 +64,4 @@ Token *new_token(TokenKind kind, Token *current, char *str, int len) {
   return token;
 }
 
-bool startswith(char *p, char *q) { return memcmp(p, q, strlen(q)) == 0; }
+bool startswith(char *p, char *q) { return strncmp(p, q, strlen(q)) == 0; }
