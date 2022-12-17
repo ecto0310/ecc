@@ -28,6 +28,8 @@ void code_generate(char *path, Program *program) {
   fprintf(fp, "\tmov rsp, rbp\n");
   fprintf(fp, "\tpop rbp\n");
   fprintf(fp, "\tret\n");
+
+  fclose(fp);
 }
 
 void generate(FILE *fp, Node *node) {
