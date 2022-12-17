@@ -33,6 +33,7 @@ void error_at(char *source, char *location, char *message, ...) {
   fprintf(stderr, "^ ");
   vfprintf(stderr, message, ap);
   fprintf(stderr, "\n");
+  va_end(ap);
   exit(1);
 }
 
