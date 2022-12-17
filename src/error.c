@@ -35,6 +35,7 @@ void error_at(char *source, char *location, char *message, ...) {
   fprintf(stderr, "\n");
   va_end(ap);
   exit(1);
+  return;
 }
 
 void error(char *fmt, ...) {
@@ -44,4 +45,5 @@ void error(char *fmt, ...) {
   fprintf(stderr, "\n");
   va_end(ap);
   exit(1);
+  return;
 }

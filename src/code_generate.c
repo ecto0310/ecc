@@ -30,6 +30,7 @@ void code_generate(char *path, Program *program) {
   fprintf(fp, "\tret\n");
 
   fclose(fp);
+  return;
 }
 
 void generate(FILE *fp, Node *node) {
@@ -92,6 +93,7 @@ void generate(FILE *fp, Node *node) {
   }
 
   fprintf(fp, "\tpush rax\n");
+  return;
 }
 
 void generate_variable(FILE *fp, Node *node) {
@@ -103,12 +105,14 @@ void generate_variable(FILE *fp, Node *node) {
   }
 
   error("代入の左辺値が変数ではありません");
+  return;
 }
 
 void load_memory(FILE *fp) {
   fprintf(fp, "\tpop rax\n");
   fprintf(fp, "\tmov rax, [rax]\n");
   fprintf(fp, "\tpush rax\n");
+  return;
 }
 
 void store_memory(FILE *fp) {
@@ -116,4 +120,5 @@ void store_memory(FILE *fp) {
   fprintf(fp, "\tpop rax\n");
   fprintf(fp, "\tmov [rax], rdi\n");
   fprintf(fp, "\tpush rdi\n");
+  return;
 }
