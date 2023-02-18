@@ -1,0 +1,9 @@
+feature: "feature/*"
+enhancement: "enhancement/*"
+fix: "fix/*"
+document: "document/*"
+refactor: "refactor/*"
+
+release: "release/*"
+
+dependency: "dependency/*"
