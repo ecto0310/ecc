@@ -1,8 +1,7 @@
-use crate::FileInfo;
+use super::file_info::FileInfo;
+use super::position::Position;
 use std::collections::VecDeque;
 use std::rc::Rc;
-
-use super::position::Position;
 
 pub struct FileStream {
     chars: VecDeque<(Position, char)>,
@@ -22,19 +21,23 @@ impl FileStream {
                 position.add_column()
             }
         }
+        chars.push_back((position, '\0'));
         Self { chars }
     }
 
-    pub fn next(&mut self) -> Option<(Position, char)> {
+    fn next(&mut self) -> Option<(Position, char)> {
+        if self.chars.len() <= 1 {
+            return self.peek();
+        }
         self.chars.pop_front()
     }
 
-    pub fn peek(&self) -> Option<&(Position, char)> {
-        self.chars.front()
+    pub fn peek(&self) -> Option<(Position, char)> {
+        self.chars.front().cloned()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.chars.is_empty()
+        self.chars.len() <= 1
     }
 
     pub fn starts_with(&self, prefix: &str) -> bool {
@@ -49,6 +52,10 @@ impl FileStream {
             .all(|(a, b)| *a == b)
     }
 
+    pub fn starts_with_white_space(&self) -> bool {
+        matches!(self.peek(), Some((_, ' ' | '\t' | '\n')))
+    }
+
     pub fn starts_with_number(&self) -> bool {
         matches!(self.peek(), Some((_, '0'..='9')))
     }
@@ -57,9 +64,11 @@ impl FileStream {
         matches!(self.peek(), Some((_, 'a'..='z' | 'A'..='Z')))
     }
 
-    pub fn advance(&mut self, times: usize) {
+    pub fn advance(&mut self, times: usize) -> Option<(Position, char)> {
+        let char = self.peek();
         for _ in 0..times {
             self.next();
         }
+        char
     }
 }

@@ -1,4 +1,4 @@
-use crate::error::CompileError;
+use crate::error::error::Error;
 use std::io::Read;
 
 #[derive(Debug)]
@@ -8,10 +8,10 @@ pub struct FileInfo {
 }
 
 impl FileInfo {
-    pub fn new(name: String) -> Result<Self, CompileError> {
+    pub fn new(name: String) -> Result<Self, Error> {
         let mut file = match std::fs::File::open(&name) {
             Ok(file) => file,
-            Err(error) => return Err(CompileError::io(error)),
+            Err(error) => return Err(Error::new_io(error)),
         };
 
         let mut code = String::new();
@@ -20,7 +20,7 @@ impl FileInfo {
                 code.push('\n');
                 Ok(Self { name, code })
             }
-            Err(error) => Err(CompileError::io(error)),
+            Err(error) => Err(Error::new_io(error)),
         }
     }
 
