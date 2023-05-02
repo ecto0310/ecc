@@ -31,7 +31,7 @@ impl Position {
             .file_info
             .get_code()
             .split('\n')
-            .nth(self.line)
+            .nth(self.line - 1)
             .unwrap();
         (self.file_info.get_name(), self.line, code, self.column)
     }

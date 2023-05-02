@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use super::token::Token;
 use super::token_kind::PuncToken;
 use crate::error::error::Error;
@@ -12,8 +14,8 @@ impl Tokenizer {
         Self { file_stream }
     }
 
-    pub fn tokenize(&mut self) -> Result<Vec<Token>, Error> {
-        let mut tokens = Vec::new();
+    pub fn tokenize(&mut self) -> Result<VecDeque<Token>, Error> {
+        let mut tokens = VecDeque::new();
 
         'tokenize_loop: while !self.file_stream.is_empty() {
             if self.file_stream.starts_with_white_space() {
@@ -77,7 +79,7 @@ impl Tokenizer {
             for (literal, kind) in symbols {
                 if self.file_stream.starts_with(literal) {
                     let position = self.file_stream.advance(literal.len()).unwrap();
-                    tokens.push(Token::new_punc_token(kind, position.0));
+                    tokens.push_back(Token::new_punc_token(kind, position.0));
                     continue 'tokenize_loop;
                 }
             }
@@ -90,7 +92,7 @@ impl Tokenizer {
                     number.push(char);
                 }
                 let number = number.parse::<usize>().unwrap();
-                tokens.push(Token::new_number(number, position));
+                tokens.push_back(Token::new_number(number, position));
                 continue;
             }
 
@@ -104,14 +106,14 @@ impl Tokenizer {
                     let (_, char) = self.file_stream.advance(1).unwrap();
                     ident.push(char);
                 }
-                tokens.push(Token::new_ident(ident, position));
+                tokens.push_back(Token::new_ident(ident, position));
                 continue;
             }
             let (position, char) = self.file_stream.advance(1).unwrap();
             return Err(Error::new_unexpected_char(position, char));
         }
 
-        tokens.push(Token::new_eof(self.file_stream.advance(1).unwrap().0));
+        tokens.push_back(Token::new_eof(self.file_stream.advance(1).unwrap().0));
         Ok(tokens)
     }
 }

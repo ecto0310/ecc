@@ -1,11 +1,14 @@
 mod error;
 mod file;
+mod parse;
 mod tokenize;
 
 use error::error::Error;
 use file::file_info::FileInfo;
 use file::file_stream::FileStream;
+use parse::parser::Parser;
 use std::rc::Rc;
+use tokenize::token_stream::TokenStream;
 use tokenize::tokenizer::Tokenizer;
 
 fn main() -> Result<(), Error> {
@@ -30,6 +33,10 @@ fn compile(file_info: Rc<FileInfo>) -> Result<(), Error> {
     let file_stream = FileStream::new(file_info);
     let mut tokenizer = Tokenizer::new(file_stream);
     let tokens = tokenizer.tokenize()?;
-    print!("{tokens:?}");
+
+    let mut token_stream = TokenStream::new(tokens);
+    let mut parser = Parser::new();
+    let syntax_tree = parser.parse(&mut token_stream)?;
+    print!("{syntax_tree:?}");
     Ok(())
 }

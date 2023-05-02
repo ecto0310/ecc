@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 
-use crate::file::position::Position;
+use crate::{file::position::Position, tokenize::token_kind::TokenKind};
 
-use super::error_kind::{ErrorKind, TokenizeErrorKind};
+use super::error_kind::{ErrorKind, ParseErrorKind, TokenizeErrorKind};
 
 pub struct Error {
     kind: ErrorKind,
@@ -19,6 +19,20 @@ impl Error {
             kind: ErrorKind::Tokenize(TokenizeErrorKind::UnexpectedChar(position, char)),
         }
     }
+    pub fn new_unexpected_token(
+        position: Position,
+        expected: TokenKind,
+        actual: TokenKind,
+    ) -> Self {
+        Self {
+            kind: ErrorKind::Parse(ParseErrorKind::UnexpectedToken(position, expected, actual)),
+        }
+    }
+    pub fn new_unexpected() -> Self {
+        Self {
+            kind: ErrorKind::Unexpected,
+        }
+    }
 
     fn error_at(&self, position: &Position, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (file_name, line, code, indent) = position.get_position();
@@ -28,7 +42,7 @@ impl Error {
             file_name,
             line,
             code,
-            " ".repeat(indent)
+            " ".repeat(indent - 1)
         )
     }
 }
@@ -40,6 +54,17 @@ impl Debug for Error {
             ErrorKind::Tokenize(TokenizeErrorKind::UnexpectedChar(position, char)) => {
                 self.error_at(position, f)?;
                 writeln!(f, "Got Unexpected char in tokenizing: `{}`", char)?;
+            }
+            ErrorKind::Parse(ParseErrorKind::UnexpectedToken(position, expected, actual)) => {
+                self.error_at(position, f)?;
+                writeln!(
+                    f,
+                    "Got Unexpected token in parse: `{:?}` (expected: `{:?}`)",
+                    actual, expected
+                )?;
+            }
+            ErrorKind::Unexpected => {
+                writeln!(f, "Got Unexpected error")?;
             }
         }
         Ok(())
