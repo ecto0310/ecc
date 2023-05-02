@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use super::expression::Expr;
+use super::expr::Expr;
 
 #[derive(Debug)]
 pub struct SyntaxTree {

@@ -10,7 +10,8 @@ use crate::{
 };
 
 use super::{
-    expression::{AssignOpKind, BinaryOpKind, Expr},
+    expr::Expr,
+    expr_kind::{AssignOpKind, BinaryOpKind},
     syntax_tree::SyntaxTree,
 };
 
