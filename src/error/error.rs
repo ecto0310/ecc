@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, io};
 
 use crate::{file::position::Position, tokenize::token_kind::TokenKind};
 
@@ -44,6 +44,12 @@ impl Error {
             code,
             " ".repeat(indent - 1)
         )
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::new_unexpected()
     }
 }
 
