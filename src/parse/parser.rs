@@ -324,7 +324,7 @@ impl Parser {
         };
         let expr = match *kind {
             TokenKind::Number(number) => Expr::new_number(number, position),
-            TokenKind::Ident(ident) => Expr::new_ident(ident, position),
+            TokenKind::Ident(name) => Expr::new_ident(name, position),
             TokenKind::Punc(PuncToken::OpenRound) => {
                 let expr = self.parse_expression(token_stream)?;
                 token_stream.expect(TokenKind::Punc(PuncToken::CloseRound))?;

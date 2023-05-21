@@ -4,7 +4,7 @@ use super::expr::Expr;
 
 #[derive(Debug)]
 pub struct SyntaxTree {
-    exprs: VecDeque<Expr>,
+    pub exprs: VecDeque<Expr>,
 }
 
 impl SyntaxTree {

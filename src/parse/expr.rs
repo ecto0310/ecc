@@ -2,7 +2,7 @@ use crate::file::position::Position;
 
 use super::expr_kind::{AssignOpKind, BinaryOpKind, ExprKind};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Expr {
     pub kind: ExprKind,
     pub position: Position,
@@ -33,28 +33,36 @@ impl Expr {
 
     pub fn new_unary_increment(expr: Expr, position: Position) -> Self {
         return Expr {
-            kind: ExprKind::UnaryIncrement(Box::new(expr)),
+            kind: ExprKind::UnaryIncrement {
+                expr: Box::new(expr),
+            },
             position,
         };
     }
 
     pub fn new_unary_decrement(expr: Expr, position: Position) -> Self {
         return Expr {
-            kind: ExprKind::UnaryDecrement(Box::new(expr)),
+            kind: ExprKind::UnaryDecrement {
+                expr: Box::new(expr),
+            },
             position,
         };
     }
 
     pub fn new_postfix_increment(expr: Expr, position: Position) -> Self {
         return Expr {
-            kind: ExprKind::PostfixIncrement(Box::new(expr)),
+            kind: ExprKind::PostfixIncrement {
+                expr: Box::new(expr),
+            },
             position,
         };
     }
 
     pub fn new_postfix_decrement(expr: Expr, position: Position) -> Self {
         return Expr {
-            kind: ExprKind::PostfixDecrement(Box::new(expr)),
+            kind: ExprKind::PostfixDecrement {
+                expr: Box::new(expr),
+            },
             position,
         };
     }
@@ -85,16 +93,16 @@ impl Expr {
         };
     }
 
-    pub fn new_ident(ident: String, position: Position) -> Self {
+    pub fn new_ident(name: String, position: Position) -> Self {
         return Expr {
-            kind: ExprKind::Identifier(ident),
+            kind: ExprKind::Identifier { name },
             position,
         };
     }
 
     pub fn new_number(number: usize, position: Position) -> Self {
         return Expr {
-            kind: ExprKind::Number(number),
+            kind: ExprKind::Number { number },
             position,
         };
     }

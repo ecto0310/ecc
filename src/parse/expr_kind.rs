@@ -1,6 +1,8 @@
+use crate::{analyze::gen_expr_kind::GenBinaryOpKind, error::error::Error};
+
 use super::expr::Expr;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExprKind {
     Binary {
         op_kind: BinaryOpKind,
@@ -21,15 +23,27 @@ pub enum ExprKind {
         then_expr: Box<Expr>,
         else_expr: Box<Expr>,
     },
-    UnaryIncrement(Box<Expr>),
-    UnaryDecrement(Box<Expr>),
-    PostfixIncrement(Box<Expr>),
-    PostfixDecrement(Box<Expr>),
-    Identifier(String),
-    Number(usize),
+    UnaryIncrement {
+        expr: Box<Expr>,
+    },
+    UnaryDecrement {
+        expr: Box<Expr>,
+    },
+    PostfixIncrement {
+        expr: Box<Expr>,
+    },
+    PostfixDecrement {
+        expr: Box<Expr>,
+    },
+    Identifier {
+        name: String,
+    },
+    Number {
+        number: usize,
+    },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryOpKind {
     /// addition operator ('+')
     Add,
@@ -69,7 +83,32 @@ pub enum BinaryOpKind {
     Ne,
 }
 
-#[derive(Debug)]
+impl BinaryOpKind {
+    pub fn convert_to_gen(&self) -> Result<GenBinaryOpKind, Error> {
+        match self {
+            BinaryOpKind::Add => Ok(GenBinaryOpKind::Add),
+            BinaryOpKind::Sub => Ok(GenBinaryOpKind::Sub),
+            BinaryOpKind::Mul => Ok(GenBinaryOpKind::Mul),
+            BinaryOpKind::Div => Ok(GenBinaryOpKind::Div),
+            BinaryOpKind::Rem => Ok(GenBinaryOpKind::Rem),
+            BinaryOpKind::BitAnd => Ok(GenBinaryOpKind::BitAnd),
+            BinaryOpKind::BitOr => Ok(GenBinaryOpKind::BitOr),
+            BinaryOpKind::BitXor => Ok(GenBinaryOpKind::BitXor),
+            BinaryOpKind::LogicAnd => Err(Error::new_unexpected()),
+            BinaryOpKind::LogicOr => Err(Error::new_unexpected()),
+            BinaryOpKind::LShift => Ok(GenBinaryOpKind::LShift),
+            BinaryOpKind::RShift => Ok(GenBinaryOpKind::RShift),
+            BinaryOpKind::Lt => Ok(GenBinaryOpKind::Lt),
+            BinaryOpKind::Gt => Ok(GenBinaryOpKind::Lt),
+            BinaryOpKind::LtEqual => Ok(GenBinaryOpKind::LtEqual),
+            BinaryOpKind::GtEqual => Ok(GenBinaryOpKind::LtEqual),
+            BinaryOpKind::Eq => Ok(GenBinaryOpKind::Eq),
+            BinaryOpKind::Ne => Ok(GenBinaryOpKind::Ne),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum AssignOpKind {
     /// simple assignment operator ('=')
     Equal,
@@ -93,4 +132,22 @@ pub enum AssignOpKind {
     BitXorEqual,
     /// bitwise inclusive OR assignment operator ('|=')
     BitOrEqual,
+}
+
+impl AssignOpKind {
+    pub fn convert_to_binary(&self) -> Result<GenBinaryOpKind, Error> {
+        match self {
+            AssignOpKind::Equal => Err(Error::new_unexpected()),
+            AssignOpKind::MulEqual => Ok(GenBinaryOpKind::Mul),
+            AssignOpKind::DivEqual => Ok(GenBinaryOpKind::Div),
+            AssignOpKind::RemEqual => Ok(GenBinaryOpKind::Rem),
+            AssignOpKind::AddEqual => Ok(GenBinaryOpKind::Add),
+            AssignOpKind::SubEqual => Ok(GenBinaryOpKind::Sub),
+            AssignOpKind::LShiftEqual => Ok(GenBinaryOpKind::LShift),
+            AssignOpKind::RShiftEqual => Ok(GenBinaryOpKind::RShift),
+            AssignOpKind::BitAndEqual => Ok(GenBinaryOpKind::BitAnd),
+            AssignOpKind::BitXorEqual => Ok(GenBinaryOpKind::BitXor),
+            AssignOpKind::BitOrEqual => Ok(GenBinaryOpKind::BitOr),
+        }
+    }
 }
