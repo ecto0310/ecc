@@ -3,7 +3,7 @@ use std::{fs::File, io::BufWriter};
 
 use crate::analyze::gen_expr::GenExpr;
 use crate::analyze::gen_expr_kind::{GenBinaryOpKind, GenExprKind};
-use crate::{analyze::gen_tree::GenTree, error::error::Error};
+use crate::{analyze::gen_tree::GenTree, error::Error};
 
 use super::reg::Reg;
 
@@ -289,7 +289,7 @@ impl Generator {
     }
 
     fn label_num(&mut self) -> usize {
-        let lebel = self.label.clone();
+        let lebel = self.label;
         self.label += 1;
         lebel
     }

@@ -1,4 +1,5 @@
 #[derive(PartialEq)]
+#[allow(dead_code)]
 pub enum Reg {
     Rax,
     Rbx,
@@ -40,6 +41,7 @@ impl Reg {
         }
     }
 
+    #[allow(dead_code)]
     pub fn dword(&self) -> &str {
         match self {
             Reg::Rax => "eax",
@@ -61,6 +63,7 @@ impl Reg {
         }
     }
 
+    #[allow(dead_code)]
     pub fn word(&self) -> &str {
         match self {
             Reg::Rax => "ax",

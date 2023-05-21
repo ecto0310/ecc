@@ -18,24 +18,24 @@ impl GenExpr {
         rhs: GenExpr,
         position: Position,
     ) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::Binary {
                 op_kind,
                 lhs: Box::new(lhs),
                 rhs: Box::new(rhs),
             },
             position,
-        };
+        }
     }
 
     pub fn new_assign(lhs: GenExpr, rhs: GenExpr, position: Position) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::Assign {
                 lhs: Box::new(lhs),
                 rhs: Box::new(rhs),
             },
             position,
-        };
+        }
     }
 
     pub fn new_assign_op(
@@ -44,42 +44,42 @@ impl GenExpr {
         rhs: GenExpr,
         position: Position,
     ) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::AssignOP {
                 op_kind,
                 lhs: Box::new(lhs),
                 rhs: Box::new(rhs),
             },
             position,
-        };
+        }
     }
 
     pub fn new_postfix_increment(expr: GenExpr, position: Position) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::PostfixIncrement {
                 expr: Box::new(expr),
             },
             position,
-        };
+        }
     }
 
     pub fn new_postfix_decrement(expr: GenExpr, position: Position) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::PostfixDecrement {
                 expr: Box::new(expr),
             },
             position,
-        };
+        }
     }
 
     pub fn new_comma(lhs: GenExpr, rhs: GenExpr, position: Position) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::Comma {
                 lhs: Box::new(lhs),
                 rhs: Box::new(rhs),
             },
             position,
-        };
+        }
     }
 
     pub fn new_condition(
@@ -88,27 +88,27 @@ impl GenExpr {
         else_expr: GenExpr,
         position: Position,
     ) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::Condition {
                 condition: Box::new(condition),
                 then_expr: Box::new(then_expr),
                 else_expr: Box::new(else_expr),
             },
             position,
-        };
+        }
     }
 
     pub fn new_variable(variable: Variable, position: Position) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::Variable { variable },
             position,
-        };
+        }
     }
 
     pub fn new_number(number: usize, position: Position) -> Self {
-        return GenExpr {
+        Self {
             kind: GenExprKind::Number { number },
             position,
-        };
+        }
     }
 }

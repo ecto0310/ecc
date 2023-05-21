@@ -1,4 +1,4 @@
-use crate::error::error::Error;
+use crate::error::Error;
 
 use super::{token::Token, token_kind::TokenKind};
 use std::collections::VecDeque;
@@ -40,7 +40,7 @@ impl TokenStream {
         if let Some(Token { kind, .. }) = self.peek() {
             return Ok(*kind == TokenKind::Eof);
         }
-        return Err(Error::new_unexpected());
+        Err(Error::new_unexpected())
     }
 
     pub fn next(&mut self) -> Option<Token> {

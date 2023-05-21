@@ -6,7 +6,7 @@ mod parse;
 mod tokenize;
 
 use analyze::analyzer::Analyzer;
-use error::error::Error;
+use error::Error;
 use file::file_info::FileInfo;
 use file::file_stream::FileStream;
 use generate::generator::Generator;
@@ -54,7 +54,7 @@ fn compile(file_info: Rc<FileInfo>, mut output_buf: BufWriter<File>) -> Result<(
 
 fn new_compile_info(source_path: String) -> Result<(Rc<FileInfo>, BufWriter<File>), Error> {
     let file_info = Rc::new(FileInfo::new(source_path.to_string())?);
-    let output_file_name = String::from(source_path) + ".s";
+    let output_file_name = source_path + ".s";
     let output_file = File::create(output_file_name)?;
     let output_buf = BufWriter::new(output_file);
     Ok((file_info, output_buf))

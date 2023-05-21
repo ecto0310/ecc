@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, VecDeque};
 
 use crate::{
-    error::error::Error,
+    error::Error,
     file::position::Position,
     parse::{
         expr::Expr,
@@ -59,12 +59,18 @@ impl Analyzer {
                 self.analyze_expression(*else_expr)?,
                 position,
             ),
-            ExprKind::UnaryIncrement { expr } => {
-                GenExpr::new_assign_op(GenBinaryOpKind::Add, self.analyze_expression(*expr)?, GenExpr::new_number(1, position.clone()), position)
-            }
-            ExprKind::UnaryDecrement { expr } => {
-                GenExpr::new_assign_op(GenBinaryOpKind::Sub, self.analyze_expression(*expr)?, GenExpr::new_number(1, position.clone()), position)
-            }
+            ExprKind::UnaryIncrement { expr } => GenExpr::new_assign_op(
+                GenBinaryOpKind::Add,
+                self.analyze_expression(*expr)?,
+                GenExpr::new_number(1, position.clone()),
+                position,
+            ),
+            ExprKind::UnaryDecrement { expr } => GenExpr::new_assign_op(
+                GenBinaryOpKind::Sub,
+                self.analyze_expression(*expr)?,
+                GenExpr::new_number(1, position.clone()),
+                position,
+            ),
             ExprKind::PostfixIncrement { expr } => {
                 GenExpr::new_postfix_increment(self.analyze_expression(*expr)?, position)
             }
@@ -138,12 +144,12 @@ impl Analyzer {
 
     fn get_variable(&mut self, name: String) -> Variable {
         if let Some(variable) = self.variable.get(&name) {
-            return variable.clone();
+            variable.clone()
         } else {
             self.offset += 8;
             let variable = Variable::new(self.offset);
             self.variable.insert(name, variable.clone());
-            return variable;
+            variable
         }
     }
 }

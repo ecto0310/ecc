@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use super::token::Token;
 use super::token_kind::PuncToken;
-use crate::error::error::Error;
+use crate::error::Error;
 use crate::file::file_stream::FileStream;
 
 pub struct Tokenizer {

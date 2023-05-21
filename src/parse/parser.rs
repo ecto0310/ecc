@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::{
-    error::error::Error,
+    error::Error,
     tokenize::{
         token::Token,
         token_kind::{PuncToken, TokenKind},
@@ -25,7 +25,10 @@ impl Parser {
     pub fn parse(&mut self, token_stream: &mut TokenStream) -> Result<SyntaxTree, Error> {
         let mut exprs = VecDeque::new();
         while !token_stream.at_eof()? {
-            if let Some(_) = token_stream.consume(TokenKind::Punc(PuncToken::Semicolon)) {
+            if token_stream
+                .consume(TokenKind::Punc(PuncToken::Semicolon))
+                .is_some()
+            {
                 continue;
             }
             let expr = self.parse_expression(token_stream)?;
@@ -69,16 +72,16 @@ impl Parser {
                     PuncToken::AndEqual => AssignOpKind::BitAndEqual,
                     PuncToken::HatEqual => AssignOpKind::BitXorEqual,
                     PuncToken::VertEqual => AssignOpKind::BitOrEqual,
-                    _ => return Ok(self.parse_conditional_expression(token_stream)?),
+                    _ => return self.parse_conditional_expression(token_stream),
                 },
-                _ => return Ok(self.parse_conditional_expression(token_stream)?),
+                _ => return self.parse_conditional_expression(token_stream),
             };
             tmp_token_stream.next();
             let rhs = self.parse_assignment_expression(&mut tmp_token_stream)?;
             *token_stream = tmp_token_stream;
             return Ok(Expr::new_assign(op_kind, lhs, rhs, position));
         }
-        return Err(Error::new_unexpected());
+        Err(Error::new_unexpected())
     }
 
     fn parse_conditional_expression(
@@ -332,6 +335,6 @@ impl Parser {
             }
             _ => return Err(Error::new_unexpected()),
         };
-        return Ok(expr);
+        Ok(expr)
     }
 }

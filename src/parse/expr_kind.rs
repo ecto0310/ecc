@@ -1,4 +1,4 @@
-use crate::{analyze::gen_expr_kind::GenBinaryOpKind, error::error::Error};
+use crate::{analyze::gen_expr_kind::GenBinaryOpKind, error::Error};
 
 use super::expr::Expr;
 

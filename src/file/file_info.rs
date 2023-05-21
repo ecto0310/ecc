@@ -1,4 +1,4 @@
-use crate::error::error::Error;
+use crate::error::Error;
 use std::io::Read;
 
 #[derive(Debug)]
