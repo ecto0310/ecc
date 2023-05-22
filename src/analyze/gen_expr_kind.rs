@@ -1,4 +1,4 @@
-use super::{gen_expr::GenExpr, variable::Variable};
+use super::{gen_expr::GenExpr, var::Var};
 
 #[derive(Debug, Clone)]
 pub enum GenExprKind {
@@ -31,8 +31,8 @@ pub enum GenExprKind {
     PostfixDecrement {
         expr: Box<GenExpr>,
     },
-    Variable {
-        variable: Variable,
+    Var {
+        var: Var,
     },
     Number {
         number: usize,

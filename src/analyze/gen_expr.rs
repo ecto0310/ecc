@@ -2,7 +2,7 @@ use crate::file::position::Position;
 
 use super::{
     gen_expr_kind::{GenBinaryOpKind, GenExprKind},
-    variable::Variable,
+    var::Var,
 };
 
 #[derive(Debug, Clone)]
@@ -98,9 +98,9 @@ impl GenExpr {
         }
     }
 
-    pub fn new_variable(variable: Variable, position: Position) -> Self {
+    pub fn new_var(var: Var, position: Position) -> Self {
         Self {
-            kind: GenExprKind::Variable { variable },
+            kind: GenExprKind::Var { var },
             position,
         }
     }
