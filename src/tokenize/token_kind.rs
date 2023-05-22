@@ -3,6 +3,7 @@ pub enum TokenKind {
     Ident(String),
     Number(usize),
     Punc(PuncToken),
+    Return,
 
     Eof,
 }
