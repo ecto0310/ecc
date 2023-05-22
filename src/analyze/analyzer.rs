@@ -43,6 +43,11 @@ impl Analyzer {
         Ok(match stmt.kind {
             StmtKind::Expr { expr } => self.analyze_stmt_expr(expr, position)?,
             StmtKind::Return { expr } => self.analyze_stmt_return(expr, position)?,
+            StmtKind::If {
+                condition,
+                then_stmt,
+                else_stmt,
+            } => self.analyze_stmt_if(condition, *then_stmt, *else_stmt, position)?,
         })
     }
 
@@ -68,6 +73,23 @@ impl Analyzer {
         } else {
             GenStmt::new_return(None, position)
         })
+    }
+
+    fn analyze_stmt_if(
+        &mut self,
+        condition: Expr,
+        then_stmt: Stmt,
+        else_stmt: Option<Stmt>,
+        position: Position,
+    ) -> Result<GenStmt, Error> {
+        let condition = self.analyze_expr(condition)?;
+        let then_stmt = self.analyze_stmt(then_stmt)?;
+        let else_stmt = if let Some(else_stmt) = else_stmt {
+            Some(self.analyze_stmt(else_stmt)?)
+        } else {
+            None
+        };
+        Ok(GenStmt::new_if(condition, then_stmt, else_stmt, position))
     }
 
     fn analyze_expr(&mut self, expr: Expr) -> Result<GenExpr, Error> {

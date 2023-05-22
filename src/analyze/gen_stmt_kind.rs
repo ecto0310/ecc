@@ -1,7 +1,16 @@
-use super::gen_expr::GenExpr;
+use super::{gen_expr::GenExpr, gen_stmt::GenStmt};
 
 #[derive(Debug, Clone)]
 pub enum GenStmtKind {
-    Expr { gen_expr: Option<GenExpr> },
-    Return { gen_expr: Option<GenExpr> },
+    Expr {
+        gen_expr: Option<GenExpr>,
+    },
+    Return {
+        gen_expr: Option<GenExpr>,
+    },
+    If {
+        condition: GenExpr,
+        then_stmt: Box<GenStmt>,
+        else_stmt: Box<Option<GenStmt>>,
+    },
 }

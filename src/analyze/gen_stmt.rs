@@ -22,4 +22,20 @@ impl GenStmt {
             position,
         }
     }
+
+    pub fn new_if(
+        condition: GenExpr,
+        then_stmt: GenStmt,
+        else_stmt: Option<GenStmt>,
+        position: Position,
+    ) -> Self {
+        Self {
+            kind: GenStmtKind::If {
+                condition,
+                then_stmt: Box::new(then_stmt),
+                else_stmt: Box::new(else_stmt),
+            },
+            position,
+        }
+    }
 }
