@@ -109,6 +109,8 @@ impl Tokenizer {
                 tokens.push_back(Token::new(
                     match ident.as_str() {
                         "return" => TokenKind::Return,
+                        "if" => TokenKind::If,
+                        "else" => TokenKind::Else,
                         _ => TokenKind::Ident(ident),
                     },
                     position,

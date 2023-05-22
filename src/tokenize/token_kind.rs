@@ -4,6 +4,8 @@ pub enum TokenKind {
     Number(usize),
     Punc(PuncToken),
     Return,
+    If,
+    Else,
 
     Eof,
 }
