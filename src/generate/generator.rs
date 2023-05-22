@@ -44,6 +44,13 @@ impl Generator {
             GenStmtKind::Return { gen_expr } => {
                 self.generate_stmt_return(f, gen_expr)?;
             }
+            GenStmtKind::If {
+                condition,
+                then_stmt,
+                else_stmt,
+            } => {
+                self.generate_stmt_if(f, condition, *then_stmt, *else_stmt)?;
+            }
         }
         Ok(())
     }
@@ -62,6 +69,7 @@ impl Generator {
         writeln!(f, "\tret")?;
         Ok(())
     }
+
     fn generate_stmt_expr(
         &mut self,
         f: &mut BufWriter<File>,
@@ -71,6 +79,28 @@ impl Generator {
             self.generate_expr(f, gen_expr)?;
             self.generate_pop(f, Reg::Rax)?;
         }
+        Ok(())
+    }
+
+    fn generate_stmt_if(
+        &mut self,
+        f: &mut BufWriter<File>,
+        condition: GenExpr,
+        then_stmt: GenStmt,
+        else_stmt: Option<GenStmt>,
+    ) -> Result<(), Error> {
+        let label_num = self.label_num();
+        self.generate_expr(f, condition)?;
+        self.generate_pop(f, Reg::Rax)?;
+        writeln!(f, "\tcmp {}, 0", Reg::Rax.qword())?;
+        writeln!(f, "\tje .Lelse{}", label_num)?;
+        self.generate_stmt(f, then_stmt)?;
+        writeln!(f, "\tjmp .Lend{}", label_num)?;
+        writeln!(f, ".Lelse{}:", label_num)?;
+        if let Some(else_stmt) = else_stmt {
+            self.generate_stmt(f, else_stmt)?;
+        }
+        writeln!(f, ".Lend{}:", label_num)?;
         Ok(())
     }
 
