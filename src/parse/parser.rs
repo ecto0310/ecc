@@ -36,6 +36,7 @@ impl Parser {
         if let Some(token) = token_stream.peek() {
             let stmt = match *token.kind {
                 TokenKind::Return => self.parse_return_stmt(token_stream)?,
+                TokenKind::If => self.parse_if_stmt(token_stream)?,
                 _ => self.parse_expr_stmt(token_stream)?,
             };
             return Ok(stmt);
@@ -54,6 +55,24 @@ impl Parser {
             return Ok(Stmt::new_return(Some(expr), token.position));
         }
         Err(Error::new_unexpected())
+    }
+
+    fn parse_if_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
+        let token = token_stream.expect(TokenKind::If)?;
+        token_stream.expect(TokenKind::Punc(PuncToken::OpenRound))?;
+        let condition = self.parse_expr(token_stream)?;
+        token_stream.expect(TokenKind::Punc(PuncToken::CloseRound))?;
+        let then_stmt = self.parse_stmt(token_stream)?;
+        if let Some(token) = token_stream.consume(TokenKind::Else) {
+            let else_stmt = self.parse_stmt(token_stream)?;
+            return Ok(Stmt::new_if(
+                condition,
+                then_stmt,
+                Some(else_stmt),
+                token.position,
+            ));
+        }
+        Ok(Stmt::new_if(condition, then_stmt, None, token.position))
     }
 
     fn parse_expr_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
