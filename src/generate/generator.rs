@@ -24,10 +24,10 @@ impl Generator {
         writeln!(f, "\tmov {}, {}", Reg::Rbp.qword(), Reg::Rsp.qword())?;
         writeln!(f, "\tsub {}, {}", Reg::Rsp.qword(), gen_tree.offset)?;
 
-        for gen_expr in gen_tree.gen_exprs.into_iter() {
-            self.generate_expr(f, gen_expr)?;
-            self.generate_pop(f, Reg::Rax)?;
-        }
+        // for gen_expr in gen_tree.gen_exprs.into_iter() {
+        //     self.generate_expr(f, gen_expr)?;
+        //     self.generate_pop(f, Reg::Rax)?;
+        // }
 
         writeln!(f, "\tmov {}, {}", Reg::Rsp.qword(), Reg::Rbp.qword())?;
         self.generate_pop(f, Reg::Rbp)?;

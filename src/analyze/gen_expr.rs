@@ -5,7 +5,7 @@ use super::{
     variable::Variable,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GenExpr {
     pub kind: GenExprKind,
     pub position: Position,

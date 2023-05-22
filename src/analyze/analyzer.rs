@@ -6,12 +6,15 @@ use crate::{
     parse::{
         expr::Expr,
         expr_kind::{AssignOpKind, BinaryOpKind, ExprKind},
+        stmt::Stmt,
+        stmt_kind::StmtKind,
         syntax_tree::SyntaxTree,
     },
 };
 
 use super::{
-    gen_expr::GenExpr, gen_expr_kind::GenBinaryOpKind, gen_tree::GenTree, variable::Variable,
+    gen_expr::GenExpr, gen_expr_kind::GenBinaryOpKind, gen_stmt::GenStmt, gen_tree::GenTree,
+    variable::Variable,
 };
 
 pub struct Analyzer {
@@ -28,11 +31,30 @@ impl Analyzer {
     }
 
     pub fn analyze(&mut self, syntax_tree: SyntaxTree) -> Result<GenTree, Error> {
-        let mut gen_exprs = VecDeque::new();
-        // for expr in syntax_tree.exprs.into_iter() {
-        //     gen_exprs.push_back(self.analyze_expression(expr)?)
-        // }
-        Ok(GenTree::new(gen_exprs, self.offset))
+        let mut gen_stmts = VecDeque::new();
+        for stmt in syntax_tree.stmts.into_iter() {
+            gen_stmts.push_back(self.analyze_statement(stmt)?)
+        }
+        Ok(GenTree::new(gen_stmts, self.offset))
+    }
+
+    fn analyze_statement(&mut self, stmt: Stmt) -> Result<GenStmt, Error> {
+        Ok(match stmt.kind {
+            StmtKind::Expr { expr } => {
+                if let Some(expr) = expr {
+                    GenStmt::new_expr(Some(self.analyze_expression(expr)?), stmt.position)
+                } else {
+                    GenStmt::new_expr(None, stmt.position)
+                }
+            }
+            StmtKind::Return { expr } => {
+                if let Some(expr) = expr {
+                    GenStmt::new_return(Some(self.analyze_expression(expr)?), stmt.position)
+                } else {
+                    GenStmt::new_return(None, stmt.position)
+                }
+            }
+        })
     }
 
     fn analyze_expression(&mut self, expr: Expr) -> Result<GenExpr, Error> {

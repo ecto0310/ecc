@@ -1,6 +1,6 @@
 use super::{gen_expr::GenExpr, variable::Variable};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GenExprKind {
     Binary {
         op_kind: GenBinaryOpKind,
@@ -39,7 +39,7 @@ pub enum GenExprKind {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GenBinaryOpKind {
     /// addition operator ('+')
     Add,
