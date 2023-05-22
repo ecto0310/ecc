@@ -2,16 +2,18 @@ use std::collections::VecDeque;
 
 use crate::{
     error::Error,
+    file::position,
     tokenize::{
         token::Token,
         token_kind::{PuncToken, TokenKind},
-        token_stream::TokenStream,
+        token_stream::{self, TokenStream},
     },
 };
 
 use super::{
     expr::Expr,
     expr_kind::{AssignOpKind, BinaryOpKind},
+    stmt::Stmt,
     syntax_tree::SyntaxTree,
 };
 
@@ -23,19 +25,51 @@ impl Parser {
     }
 
     pub fn parse(&mut self, token_stream: &mut TokenStream) -> Result<SyntaxTree, Error> {
-        let mut exprs = VecDeque::new();
+        let mut stmts = VecDeque::new();
         while !token_stream.at_eof()? {
-            if token_stream
-                .consume(TokenKind::Punc(PuncToken::Semicolon))
-                .is_some()
-            {
-                continue;
+            let stmt = self.parse_statement(token_stream)?;
+            stmts.push_back(stmt);
+        }
+        Ok(SyntaxTree::new(stmts))
+    }
+
+    fn parse_statement(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
+        if let Some(token) = token_stream.peek() {
+            let stmt = match *token.kind {
+                TokenKind::Return => self.parse_return_statement(token_stream)?,
+                _ => self.parse_expression_statement(token_stream)?,
+            };
+            return Ok(stmt);
+        }
+        Err(Error::new_unexpected())
+    }
+
+    fn parse_return_statement(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
+        token_stream.expect(TokenKind::Return)?;
+        if let Some(token) = token_stream.peek() {
+            if *token.kind == TokenKind::Punc(PuncToken::Semicolon) {
+                return Ok(Stmt::new_return(None, token.position));
             }
             let expr = self.parse_expression(token_stream)?;
-            exprs.push_back(expr);
             token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
+            return Ok(Stmt::new_return(Some(expr), token.position));
         }
-        Ok(SyntaxTree::new(exprs))
+        Err(Error::new_unexpected())
+    }
+
+    fn parse_expression_statement(
+        &mut self,
+        token_stream: &mut TokenStream,
+    ) -> Result<Stmt, Error> {
+        if let Some(token) = token_stream.peek() {
+            if *token.kind == TokenKind::Punc(PuncToken::Semicolon) {
+                return Ok(Stmt::new_expr(None, token.position));
+            }
+            let expr = self.parse_expression(token_stream)?;
+            token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
+            return Ok(Stmt::new_expr(Some(expr), token.position));
+        }
+        Err(Error::new_unexpected())
     }
 
     fn parse_expression(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {

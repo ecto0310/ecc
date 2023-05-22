@@ -29,9 +29,9 @@ impl Analyzer {
 
     pub fn analyze(&mut self, syntax_tree: SyntaxTree) -> Result<GenTree, Error> {
         let mut gen_exprs = VecDeque::new();
-        for expr in syntax_tree.exprs.into_iter() {
-            gen_exprs.push_back(self.analyze_expression(expr)?)
-        }
+        // for expr in syntax_tree.exprs.into_iter() {
+        //     gen_exprs.push_back(self.analyze_expression(expr)?)
+        // }
         Ok(GenTree::new(gen_exprs, self.offset))
     }
 
