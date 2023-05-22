@@ -1,6 +1,6 @@
-use super::{gen_expr::GenExpr, variable::Variable};
+use super::{gen_expr::GenExpr, var::Var};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GenExprKind {
     Binary {
         op_kind: GenBinaryOpKind,
@@ -31,15 +31,15 @@ pub enum GenExprKind {
     PostfixDecrement {
         expr: Box<GenExpr>,
     },
-    Variable {
-        variable: Variable,
+    Var {
+        var: Var,
     },
     Number {
         number: usize,
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GenBinaryOpKind {
     /// addition operator ('+')
     Add,

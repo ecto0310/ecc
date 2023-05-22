@@ -23,9 +23,9 @@ impl Token {
         }
     }
 
-    pub fn new_ident(ident: String, position: Position) -> Self {
+    pub fn new(kind: TokenKind, position: Position) -> Self {
         Self {
-            kind: Box::new(TokenKind::Ident(ident)),
+            kind: Box::new(kind),
             position,
         }
     }

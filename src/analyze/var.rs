@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
-pub struct Variable {
+pub struct Var {
     pub offset: usize,
 }
 
-impl Variable {
+impl Var {
     pub fn new(offset: usize) -> Self {
         Self { offset }
     }

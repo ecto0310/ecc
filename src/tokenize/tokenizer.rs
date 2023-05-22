@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 
 use super::token::Token;
-use super::token_kind::PuncToken;
+use super::token_kind::{PuncToken, TokenKind};
 use crate::error::Error;
 use crate::file::file_stream::FileStream;
 
@@ -106,7 +106,13 @@ impl Tokenizer {
                     let (_, char) = self.file_stream.advance(1).unwrap();
                     ident.push(char);
                 }
-                tokens.push_back(Token::new_ident(ident, position));
+                tokens.push_back(Token::new(
+                    match ident.as_str() {
+                        "return" => TokenKind::Return,
+                        _ => TokenKind::Ident(ident),
+                    },
+                    position,
+                ));
                 continue;
             }
             let (position, char) = self.file_stream.advance(1).unwrap();

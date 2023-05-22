@@ -1,14 +1,13 @@
 use std::collections::VecDeque;
 
-use super::expr::Expr;
+use super::stmt::Stmt;
 
 #[derive(Debug)]
 pub struct SyntaxTree {
-    pub exprs: VecDeque<Expr>,
+    pub stmts: VecDeque<Stmt>,
 }
-
 impl SyntaxTree {
-    pub fn new(exprs: VecDeque<Expr>) -> Self {
-        Self { exprs }
+    pub fn new(stmts: VecDeque<Stmt>) -> Self {
+        Self { stmts }
     }
 }
