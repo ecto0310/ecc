@@ -38,4 +38,22 @@ impl Stmt {
             position,
         }
     }
+    
+    pub fn new_for(
+        init_expr: Option<Expr>,
+        condition_expr: Option<Expr>,
+        delta_expr: Option<Expr>,
+        run_stmt: Stmt,
+        position: Position,
+    ) -> Self {
+        Self {
+            kind: StmtKind::For {
+                init_expr,
+                condition_expr,
+                delta_expr,
+                run_stmt: Box::new(run_stmt),
+            },
+            position,
+        }
+    }
 }
