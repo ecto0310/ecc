@@ -9,16 +9,16 @@ pub struct GenStmt {
 }
 
 impl GenStmt {
-    pub fn new_expr(expr: Option<GenExpr>, position: Position) -> Self {
+    pub fn new_expr(gen_expr: Option<GenExpr>, position: Position) -> Self {
         Self {
-            kind: GenStmtKind::Expr { expr },
+            kind: GenStmtKind::Expr { gen_expr },
             position,
         }
     }
 
-    pub fn new_return(expr: Option<GenExpr>, position: Position) -> Self {
+    pub fn new_return(gen_expr: Option<GenExpr>, position: Position) -> Self {
         Self {
-            kind: GenStmtKind::Return { expr },
+            kind: GenStmtKind::Return { gen_expr },
             position,
         }
     }

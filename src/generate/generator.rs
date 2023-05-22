@@ -3,6 +3,8 @@ use std::{fs::File, io::BufWriter};
 
 use crate::analyze::gen_expr::GenExpr;
 use crate::analyze::gen_expr_kind::{GenBinaryOpKind, GenExprKind};
+use crate::analyze::gen_stmt::GenStmt;
+use crate::analyze::gen_stmt_kind::GenStmtKind;
 use crate::{analyze::gen_tree::GenTree, error::Error};
 
 use super::reg::Reg;
@@ -24,14 +26,51 @@ impl Generator {
         writeln!(f, "\tmov {}, {}", Reg::Rbp.qword(), Reg::Rsp.qword())?;
         writeln!(f, "\tsub {}, {}", Reg::Rsp.qword(), gen_tree.offset)?;
 
-        // for gen_expr in gen_tree.gen_exprs.into_iter() {
-        //     self.generate_expr(f, gen_expr)?;
-        //     self.generate_pop(f, Reg::Rax)?;
-        // }
+        for gen_stmt in gen_tree.gen_stmts.into_iter() {
+            self.generate_stmt(f, gen_stmt)?;
+        }
 
         writeln!(f, "\tmov {}, {}", Reg::Rsp.qword(), Reg::Rbp.qword())?;
         self.generate_pop(f, Reg::Rbp)?;
         writeln!(f, "\tret")?;
+        Ok(())
+    }
+
+    fn generate_stmt(&mut self, f: &mut BufWriter<File>, gen_stmt: GenStmt) -> Result<(), Error> {
+        match gen_stmt.kind {
+            GenStmtKind::Expr { gen_expr } => {
+                self.generate_stmt_expr(f, gen_expr)?;
+            }
+            GenStmtKind::Return { gen_expr } => {
+                self.generate_stmt_return(f, gen_expr)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn generate_stmt_return(
+        &mut self,
+        f: &mut BufWriter<File>,
+        gen_expr: Option<GenExpr>,
+    ) -> Result<(), Error> {
+        if let Some(gen_expr) = gen_expr {
+            self.generate_expr(f, gen_expr)?;
+            self.generate_pop(f, Reg::Rax)?;
+        }
+        writeln!(f, "\tmov {}, {}", Reg::Rsp.qword(), Reg::Rbp.qword())?;
+        self.generate_pop(f, Reg::Rbp)?;
+        writeln!(f, "\tret")?;
+        Ok(())
+    }
+    fn generate_stmt_expr(
+        &mut self,
+        f: &mut BufWriter<File>,
+        gen_expr: Option<GenExpr>,
+    ) -> Result<(), Error> {
+        if let Some(gen_expr) = gen_expr {
+            self.generate_expr(f, gen_expr)?;
+            self.generate_pop(f, Reg::Rax)?;
+        }
         Ok(())
     }
 

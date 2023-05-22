@@ -2,11 +2,10 @@ use std::collections::VecDeque;
 
 use crate::{
     error::Error,
-    file::position,
     tokenize::{
         token::Token,
         token_kind::{PuncToken, TokenKind},
-        token_stream::{self, TokenStream},
+        token_stream::TokenStream,
     },
 };
 
