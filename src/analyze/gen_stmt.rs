@@ -56,4 +56,14 @@ impl GenStmt {
             position,
         }
     }
+
+    pub fn new_while(condition: GenExpr, run_stmt: GenStmt, position: Position) -> Self {
+        Self {
+            kind: GenStmtKind::While {
+                condition,
+                run_stmt: Box::new(run_stmt),
+            },
+            position,
+        }
+    }
 }

@@ -56,6 +56,10 @@ impl Analyzer {
             } => {
                 self.analyze_stmt_for(init_expr, condition_expr, delta_expr, *run_stmt, position)?
             }
+            StmtKind::While {
+                condition,
+                run_stmt,
+            } => self.analyze_stmt_while(condition, *run_stmt, position)?,
         })
     }
 
@@ -131,6 +135,17 @@ impl Analyzer {
             run_stmt,
             position,
         ))
+    }
+
+    fn analyze_stmt_while(
+        &mut self,
+        condition: Expr,
+        run_stmt: Stmt,
+        position: Position,
+    ) -> Result<GenStmt, Error> {
+        let condition = self.analyze_expr(condition)?;
+        let run_stmt = self.analyze_stmt(run_stmt)?;
+        Ok(GenStmt::new_while(condition, run_stmt, position))
     }
 
     fn analyze_expr(&mut self, expr: Expr) -> Result<GenExpr, Error> {

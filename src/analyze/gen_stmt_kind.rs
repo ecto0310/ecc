@@ -19,4 +19,8 @@ pub enum GenStmtKind {
         delta_expr: Option<GenExpr>,
         run_stmt: Box<GenStmt>,
     },
+    While {
+        condition: GenExpr,
+        run_stmt: Box<GenStmt>,
+    },
 }
