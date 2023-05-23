@@ -9,29 +9,29 @@ pub struct GenStmt {
 }
 
 impl GenStmt {
-    pub fn new_expr(gen_expr: Option<GenExpr>, position: Position) -> Self {
+    pub fn new_expr(expr: Option<GenExpr>, position: Position) -> Self {
         Self {
-            kind: GenStmtKind::Expr { gen_expr },
+            kind: GenStmtKind::Expr { expr },
             position,
         }
     }
 
-    pub fn new_return(gen_expr: Option<GenExpr>, position: Position) -> Self {
+    pub fn new_return(expr: Option<GenExpr>, position: Position) -> Self {
         Self {
-            kind: GenStmtKind::Return { gen_expr },
+            kind: GenStmtKind::Return { expr },
             position,
         }
     }
 
     pub fn new_if(
-        condition: GenExpr,
+        condition_expr: GenExpr,
         then_stmt: GenStmt,
         else_stmt: Option<GenStmt>,
         position: Position,
     ) -> Self {
         Self {
             kind: GenStmtKind::If {
-                condition,
+                condition_expr,
                 then_stmt: Box::new(then_stmt),
                 else_stmt: Box::new(else_stmt),
             },
@@ -57,10 +57,10 @@ impl GenStmt {
         }
     }
 
-    pub fn new_while(condition: GenExpr, run_stmt: GenStmt, position: Position) -> Self {
+    pub fn new_while(condition_expr: GenExpr, run_stmt: GenStmt, position: Position) -> Self {
         Self {
             kind: GenStmtKind::While {
-                condition,
+                condition_expr,
                 run_stmt: Box::new(run_stmt),
             },
             position,

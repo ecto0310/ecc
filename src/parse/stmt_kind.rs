@@ -9,7 +9,7 @@ pub enum StmtKind {
         expr: Option<Expr>,
     },
     If {
-        condition: Expr,
+        condition_expr: Expr,
         then_stmt: Box<Stmt>,
         else_stmt: Box<Option<Stmt>>,
     },
@@ -20,7 +20,7 @@ pub enum StmtKind {
         run_stmt: Box<Stmt>,
     },
     While {
-        condition: Expr,
+        condition_expr: Expr,
         run_stmt: Box<Stmt>,
     },
 }

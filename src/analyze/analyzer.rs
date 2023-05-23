@@ -31,11 +31,11 @@ impl Analyzer {
     }
 
     pub fn analyze(&mut self, syntax_tree: SyntaxTree) -> Result<GenTree, Error> {
-        let mut gen_stmts = VecDeque::new();
+        let mut stmts = VecDeque::new();
         for stmt in syntax_tree.stmts.into_iter() {
-            gen_stmts.push_back(self.analyze_stmt(stmt)?)
+            stmts.push_back(self.analyze_stmt(stmt)?)
         }
-        Ok(GenTree::new(gen_stmts, self.offset))
+        Ok(GenTree::new(stmts, self.offset))
     }
 
     fn analyze_stmt(&mut self, stmt: Stmt) -> Result<GenStmt, Error> {
@@ -44,10 +44,10 @@ impl Analyzer {
             StmtKind::Expr { expr } => self.analyze_stmt_expr(expr, position)?,
             StmtKind::Return { expr } => self.analyze_stmt_return(expr, position)?,
             StmtKind::If {
-                condition,
+                condition_expr,
                 then_stmt,
                 else_stmt,
-            } => self.analyze_stmt_if(condition, *then_stmt, *else_stmt, position)?,
+            } => self.analyze_stmt_if(condition_expr, *then_stmt, *else_stmt, position)?,
             StmtKind::For {
                 init_expr,
                 condition_expr,
@@ -57,9 +57,9 @@ impl Analyzer {
                 self.analyze_stmt_for(init_expr, condition_expr, delta_expr, *run_stmt, position)?
             }
             StmtKind::While {
-                condition,
+                condition_expr,
                 run_stmt,
-            } => self.analyze_stmt_while(condition, *run_stmt, position)?,
+            } => self.analyze_stmt_while(condition_expr, *run_stmt, position)?,
         })
     }
 
@@ -68,11 +68,12 @@ impl Analyzer {
         expr: Option<Expr>,
         position: Position,
     ) -> Result<GenStmt, Error> {
-        Ok(if let Some(expr) = expr {
-            GenStmt::new_expr(Some(self.analyze_expr(expr)?), position)
+        let expr = if let Some(expr) = expr {
+            Some(self.analyze_expr(expr)?)
         } else {
-            GenStmt::new_expr(None, position)
-        })
+            None
+        };
+        Ok(GenStmt::new_expr(expr, position))
     }
 
     fn analyze_stmt_return(
@@ -80,28 +81,34 @@ impl Analyzer {
         expr: Option<Expr>,
         position: Position,
     ) -> Result<GenStmt, Error> {
-        Ok(if let Some(expr) = expr {
-            GenStmt::new_return(Some(self.analyze_expr(expr)?), position)
+        let expr = if let Some(expr) = expr {
+            Some(self.analyze_expr(expr)?)
         } else {
-            GenStmt::new_return(None, position)
-        })
+            None
+        };
+        Ok(GenStmt::new_return(expr, position))
     }
 
     fn analyze_stmt_if(
         &mut self,
-        condition: Expr,
+        condition_expr: Expr,
         then_stmt: Stmt,
         else_stmt: Option<Stmt>,
         position: Position,
     ) -> Result<GenStmt, Error> {
-        let condition = self.analyze_expr(condition)?;
+        let condition_expr = self.analyze_expr(condition_expr)?;
         let then_stmt = self.analyze_stmt(then_stmt)?;
         let else_stmt = if let Some(else_stmt) = else_stmt {
             Some(self.analyze_stmt(else_stmt)?)
         } else {
             None
         };
-        Ok(GenStmt::new_if(condition, then_stmt, else_stmt, position))
+        Ok(GenStmt::new_if(
+            condition_expr,
+            then_stmt,
+            else_stmt,
+            position,
+        ))
     }
 
     fn analyze_stmt_for(
@@ -139,13 +146,13 @@ impl Analyzer {
 
     fn analyze_stmt_while(
         &mut self,
-        condition: Expr,
+        condition_expr: Expr,
         run_stmt: Stmt,
         position: Position,
     ) -> Result<GenStmt, Error> {
-        let condition = self.analyze_expr(condition)?;
+        let condition_expr = self.analyze_expr(condition_expr)?;
         let run_stmt = self.analyze_stmt(run_stmt)?;
-        Ok(GenStmt::new_while(condition, run_stmt, position))
+        Ok(GenStmt::new_while(condition_expr, run_stmt, position))
     }
 
     fn analyze_expr(&mut self, expr: Expr) -> Result<GenExpr, Error> {
