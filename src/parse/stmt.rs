@@ -38,7 +38,7 @@ impl Stmt {
             position,
         }
     }
-    
+
     pub fn new_for(
         init_expr: Option<Expr>,
         condition_expr: Option<Expr>,
