@@ -51,6 +51,14 @@ impl Generator {
             } => {
                 self.generate_stmt_if(f, condition, *then_stmt, *else_stmt)?;
             }
+            GenStmtKind::For {
+                init_expr,
+                condition_expr,
+                delta_expr,
+                run_stmt,
+            } => {
+                self.generate_stmt_for(f, init_expr, condition_expr, delta_expr, *run_stmt)?;
+            }
         }
         Ok(())
     }
@@ -100,6 +108,34 @@ impl Generator {
         if let Some(else_stmt) = else_stmt {
             self.generate_stmt(f, else_stmt)?;
         }
+        writeln!(f, ".Lend{}:", label_num)?;
+        Ok(())
+    }
+
+    fn generate_stmt_for(
+        &mut self,
+        f: &mut BufWriter<File>,
+        init_expr: Option<GenExpr>,
+        condition_expr: GenExpr,
+        delta_expr: Option<GenExpr>,
+        run_stmt: GenStmt,
+    ) -> Result<(), Error> {
+        let label_num = self.label_num();
+        if let Some(gen_expr) = init_expr {
+            self.generate_expr(f, gen_expr)?;
+            self.generate_pop(f, Reg::Rax)?;
+        }
+        writeln!(f, ".Lbegin{}:", label_num)?;
+        self.generate_expr(f, condition_expr)?;
+        self.generate_pop(f, Reg::Rax)?;
+        writeln!(f, "\tcmp {}, 0", Reg::Rax.qword())?;
+        writeln!(f, "\tje .Lend{}", label_num)?;
+        self.generate_stmt(f, run_stmt)?;
+        if let Some(delta_expr) = delta_expr {
+            self.generate_expr(f, delta_expr)?;
+            self.generate_pop(f, Reg::Rax)?;
+        }
+        writeln!(f, "\tjmp .Lbegin{}", label_num)?;
         writeln!(f, ".Lend{}:", label_num)?;
         Ok(())
     }

@@ -48,6 +48,14 @@ impl Analyzer {
                 then_stmt,
                 else_stmt,
             } => self.analyze_stmt_if(condition, *then_stmt, *else_stmt, position)?,
+            StmtKind::For {
+                init_expr,
+                condition_expr,
+                delta_expr,
+                run_stmt,
+            } => {
+                self.analyze_stmt_for(init_expr, condition_expr, delta_expr, *run_stmt, position)?
+            }
         })
     }
 
@@ -90,6 +98,39 @@ impl Analyzer {
             None
         };
         Ok(GenStmt::new_if(condition, then_stmt, else_stmt, position))
+    }
+
+    fn analyze_stmt_for(
+        &mut self,
+        init_expr: Option<Expr>,
+        condition_expr: Option<Expr>,
+        delta_expr: Option<Expr>,
+        run_stmt: Stmt,
+        position: Position,
+    ) -> Result<GenStmt, Error> {
+        let init_expr = if let Some(init_expr) = init_expr {
+            Some(self.analyze_expr(init_expr)?)
+        } else {
+            None
+        };
+        let condition_expr = if let Some(condition_expr) = condition_expr {
+            self.analyze_expr(condition_expr)?
+        } else {
+            GenExpr::new_number(1, position.clone())
+        };
+        let delta_expr = if let Some(delta_expr) = delta_expr {
+            Some(self.analyze_expr(delta_expr)?)
+        } else {
+            None
+        };
+        let run_stmt = self.analyze_stmt(run_stmt)?;
+        Ok(GenStmt::new_for(
+            init_expr,
+            condition_expr,
+            delta_expr,
+            run_stmt,
+            position,
+        ))
     }
 
     fn analyze_expr(&mut self, expr: Expr) -> Result<GenExpr, Error> {

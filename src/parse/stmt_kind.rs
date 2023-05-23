@@ -13,4 +13,10 @@ pub enum StmtKind {
         then_stmt: Box<Stmt>,
         else_stmt: Box<Option<Stmt>>,
     },
+    For {
+        init_expr: Option<Expr>,
+        condition_expr: Option<Expr>,
+        delta_expr: Option<Expr>,
+        run_stmt: Box<Stmt>,
+    },
 }

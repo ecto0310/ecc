@@ -111,6 +111,7 @@ impl Tokenizer {
                         "return" => TokenKind::Return,
                         "if" => TokenKind::If,
                         "else" => TokenKind::Else,
+                        "for" => TokenKind::For,
                         _ => TokenKind::Ident(ident),
                     },
                     position,

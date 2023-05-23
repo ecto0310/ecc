@@ -13,4 +13,10 @@ pub enum GenStmtKind {
         then_stmt: Box<GenStmt>,
         else_stmt: Box<Option<GenStmt>>,
     },
+    For {
+        init_expr: Option<GenExpr>,
+        condition_expr: GenExpr,
+        delta_expr: Option<GenExpr>,
+        run_stmt: Box<GenStmt>,
+    },
 }
