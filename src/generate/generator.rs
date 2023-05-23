@@ -59,6 +59,12 @@ impl Generator {
             } => {
                 self.generate_stmt_for(f, init_expr, condition_expr, delta_expr, *run_stmt)?;
             }
+            GenStmtKind::While {
+                condition,
+                run_stmt,
+            } => {
+                self.generate_stmt_while(f, condition, *run_stmt)?;
+            }
         }
         Ok(())
     }
@@ -135,6 +141,23 @@ impl Generator {
             self.generate_expr(f, delta_expr)?;
             self.generate_pop(f, Reg::Rax)?;
         }
+        writeln!(f, "\tjmp .Lbegin{}", label_num)?;
+        writeln!(f, ".Lend{}:", label_num)?;
+        Ok(())
+    }
+    fn generate_stmt_while(
+        &mut self,
+        f: &mut BufWriter<File>,
+        condition: GenExpr,
+        run_stmt: GenStmt,
+    ) -> Result<(), Error> {
+        let label_num = self.label_num();
+        writeln!(f, ".Lbegin{}:", label_num)?;
+        self.generate_expr(f, condition)?;
+        self.generate_pop(f, Reg::Rax)?;
+        writeln!(f, "\tcmp {}, 0", Reg::Rax.qword())?;
+        writeln!(f, "\tje .Lend{}", label_num)?;
+        self.generate_stmt(f, run_stmt)?;
         writeln!(f, "\tjmp .Lbegin{}", label_num)?;
         writeln!(f, ".Lend{}:", label_num)?;
         Ok(())
