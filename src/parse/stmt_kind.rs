@@ -19,4 +19,8 @@ pub enum StmtKind {
         delta_expr: Option<Expr>,
         run_stmt: Box<Stmt>,
     },
+    While {
+        condition: Expr,
+        run_stmt: Box<Stmt>,
+    },
 }

@@ -56,4 +56,14 @@ impl Stmt {
             position,
         }
     }
+
+    pub fn new_while(condition: Expr, run_stmt: Stmt, position: Position) -> Self {
+        Self {
+            kind: StmtKind::While {
+                condition,
+                run_stmt: Box::new(run_stmt),
+            },
+            position,
+        }
+    }
 }
