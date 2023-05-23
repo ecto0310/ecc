@@ -7,6 +7,7 @@ pub enum TokenKind {
     If,
     Else,
     For,
+    While,
 
     Eof,
 }

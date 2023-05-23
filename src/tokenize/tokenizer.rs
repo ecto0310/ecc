@@ -112,6 +112,7 @@ impl Tokenizer {
                         "if" => TokenKind::If,
                         "else" => TokenKind::Else,
                         "for" => TokenKind::For,
+                        "while" => TokenKind::While,
                         _ => TokenKind::Ident(ident),
                     },
                     position,
