@@ -38,4 +38,22 @@ impl GenStmt {
             position,
         }
     }
+
+    pub fn new_for(
+        init_expr: Option<GenExpr>,
+        condition_expr: GenExpr,
+        delta_expr: Option<GenExpr>,
+        run_stmt: GenStmt,
+        position: Position,
+    ) -> Self {
+        Self {
+            kind: GenStmtKind::For {
+                init_expr,
+                condition_expr,
+                delta_expr,
+                run_stmt: Box::new(run_stmt),
+            },
+            position,
+        }
+    }
 }
