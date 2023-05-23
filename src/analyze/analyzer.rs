@@ -31,11 +31,12 @@ impl Analyzer {
     }
 
     pub fn analyze(&mut self, syntax_tree: SyntaxTree) -> Result<GenTree, Error> {
-        let mut stmts = VecDeque::new();
-        for stmt in syntax_tree.stmts.into_iter() {
-            stmts.push_back(self.analyze_stmt(stmt)?)
-        }
-        Ok(GenTree::new(stmts, self.offset))
+        let stmts: Result<VecDeque<GenStmt>, Error> = syntax_tree
+            .stmts
+            .into_iter()
+            .map(|stmt| self.analyze_stmt(stmt))
+            .collect();
+        Ok(GenTree::new(stmts?, self.offset))
     }
 
     fn analyze_stmt(&mut self, stmt: Stmt) -> Result<GenStmt, Error> {
@@ -60,6 +61,7 @@ impl Analyzer {
                 condition_expr,
                 run_stmt,
             } => self.analyze_stmt_while(condition_expr, *run_stmt, position)?,
+            StmtKind::Cpd { stmts } => self.analyze_stmt_cpd(stmts, position)?,
         })
     }
 
@@ -153,6 +155,14 @@ impl Analyzer {
         let condition_expr = self.analyze_expr(condition_expr)?;
         let run_stmt = self.analyze_stmt(run_stmt)?;
         Ok(GenStmt::new_while(condition_expr, run_stmt, position))
+    }
+
+    fn analyze_stmt_cpd(&mut self, stmts: Vec<Stmt>, position: Position) -> Result<GenStmt, Error> {
+        let stmts: Result<Vec<GenStmt>, Error> = stmts
+            .into_iter()
+            .map(|stmt| self.analyze_stmt(stmt))
+            .collect();
+        Ok(GenStmt::new_cpd(stmts?, position))
     }
 
     fn analyze_expr(&mut self, expr: Expr) -> Result<GenExpr, Error> {

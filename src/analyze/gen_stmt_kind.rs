@@ -23,4 +23,7 @@ pub enum GenStmtKind {
         condition_expr: GenExpr,
         run_stmt: Box<GenStmt>,
     },
+    Cpd {
+        stmts: Vec<GenStmt>,
+    },
 }
