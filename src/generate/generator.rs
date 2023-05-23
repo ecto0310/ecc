@@ -65,6 +65,9 @@ impl Generator {
             } => {
                 self.generate_stmt_while(f, condition_expr, *run_stmt)?;
             }
+            GenStmtKind::Cpd { stmts } => {
+                self.generate_stmt_cpd(f, stmts)?;
+            }
         }
         Ok(())
     }
@@ -145,6 +148,7 @@ impl Generator {
         writeln!(f, ".Lend{}:", label_num)?;
         Ok(())
     }
+
     fn generate_stmt_while(
         &mut self,
         f: &mut BufWriter<File>,
@@ -160,6 +164,17 @@ impl Generator {
         self.generate_stmt(f, run_stmt)?;
         writeln!(f, "\tjmp .Lbegin{}", label_num)?;
         writeln!(f, ".Lend{}:", label_num)?;
+        Ok(())
+    }
+
+    fn generate_stmt_cpd(
+        &mut self,
+        f: &mut BufWriter<File>,
+        stmts: Vec<GenStmt>,
+    ) -> Result<(), Error> {
+        for stmt in stmts.into_iter() {
+            self.generate_stmt(f, stmt)?;
+        }
         Ok(())
     }
 
