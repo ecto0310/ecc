@@ -23,4 +23,7 @@ pub enum StmtKind {
         condition_expr: Expr,
         run_stmt: Box<Stmt>,
     },
+    Cpd {
+        stmts: Vec<Stmt>,
+    },
 }

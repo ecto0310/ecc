@@ -66,4 +66,11 @@ impl Stmt {
             position,
         }
     }
+
+    pub fn new_cpd(stmts: Vec<Stmt>, position: Position) -> Self {
+        Self {
+            kind: StmtKind::Cpd { stmts },
+            position,
+        }
+    }
 }
