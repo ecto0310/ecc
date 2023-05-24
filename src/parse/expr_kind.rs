@@ -41,6 +41,10 @@ pub enum ExprKind {
     Number {
         number: usize,
     },
+    Func {
+        name: Box<Expr>,
+        args: Vec<Expr>,
+    },
 }
 
 #[derive(Debug, Clone)]
