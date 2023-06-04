@@ -394,6 +394,25 @@ impl Parser {
                         token_stream.next();
                         expr = Expr::new_postfix_decrement(expr, position);
                     }
+                    PuncToken::OpenRound => {
+                        token_stream.next();
+                        let mut args = Vec::new();
+                        if token_stream
+                            .consume(TokenKind::Punc(PuncToken::CloseRound))
+                            .is_some()
+                        {
+                            return Ok(Expr::new_func(expr, args, position));
+                        }
+                        args.push(self.parse_assignment_expr(token_stream)?);
+                        while token_stream
+                            .consume(TokenKind::Punc(PuncToken::CloseRound))
+                            .is_none()
+                        {
+                            token_stream.expect(TokenKind::Punc(PuncToken::Comma))?;
+                            args.push(self.parse_assignment_expr(token_stream)?);
+                        }
+                        return Ok(Expr::new_func(expr, args, position));
+                    }
                     _ => break,
                 },
                 _ => break,

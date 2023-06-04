@@ -1,4 +1,4 @@
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 #[allow(dead_code)]
 pub enum Reg {
     Rax,

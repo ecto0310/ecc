@@ -106,4 +106,14 @@ impl Expr {
             position,
         }
     }
+
+    pub fn new_func(name: Expr, args: Vec<Expr>, position: Position) -> Self {
+        Self {
+            kind: ExprKind::Func {
+                name: Box::new(name),
+                args,
+            },
+            position,
+        }
+    }
 }

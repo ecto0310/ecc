@@ -1,7 +1,7 @@
 use crate::file::position::Position;
 
 use super::{
-    gen_expr_kind::{GenBinaryOpKind, GenExprKind},
+    gen_expr_kind::{GenBinaryOpKind, GenExprKind, GenFuncCallKind},
     var::Var,
 };
 
@@ -108,6 +108,28 @@ impl GenExpr {
     pub fn new_number(number: usize, position: Position) -> Self {
         Self {
             kind: GenExprKind::Number { number },
+            position,
+        }
+    }
+
+    pub fn new_func_expr(expr: GenExpr, args: Vec<GenExpr>, position: Position) -> Self {
+        Self {
+            kind: GenExprKind::Func {
+                name: GenFuncCallKind::Expr {
+                    expr: Box::new(expr),
+                },
+                args,
+            },
+            position,
+        }
+    }
+
+    pub fn new_func_label(name: String, args: Vec<GenExpr>, position: Position) -> Self {
+        Self {
+            kind: GenExprKind::Func {
+                name: GenFuncCallKind::Label { name },
+                args,
+            },
             position,
         }
     }
