@@ -37,6 +37,10 @@ pub enum GenExprKind {
     Number {
         number: usize,
     },
+    Func {
+        name: GenFuncCallKind,
+        args: Vec<GenExpr>,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -69,4 +73,10 @@ pub enum GenBinaryOpKind {
     Eq,
     /// inequality operator ('!=')
     Ne,
+}
+
+#[derive(Debug, Clone)]
+pub enum GenFuncCallKind {
+    Label { name: String },
+    Expr { expr: Box<GenExpr> },
 }

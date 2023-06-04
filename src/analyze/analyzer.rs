@@ -210,6 +210,15 @@ impl Analyzer {
                 GenExpr::new_var(var, position)
             }
             ExprKind::Number { number } => GenExpr::new_number(number, position),
+            ExprKind::Func { name, args } => {
+                let args: Result<Vec<GenExpr>, Error> =
+                    args.into_iter().map(|arg| self.analyze_expr(arg)).collect();
+                if let ExprKind::Identifier { name } = name.kind {
+                    GenExpr::new_func_label(name, args?, position)
+                } else {
+                    GenExpr::new_func_expr(self.analyze_expr(*name)?, args?, position)
+                }
+            }
         })
     }
 
