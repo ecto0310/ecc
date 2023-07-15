@@ -17,22 +17,28 @@ use std::rc::Rc;
 use tokenize::token_stream::TokenStream;
 use tokenize::tokenizer::Tokenizer;
 
-fn main() -> Result<(), Error> {
+fn main() {
     let source_paths: Vec<String> = std::env::args().collect();
     let source_paths = &source_paths[1..];
     if source_paths.is_empty() {
         eprintln!("Not select source file");
     }
     for source_path in source_paths {
-        let (file_info, output_buf) = new_compile_info(source_path.to_string())?;
+        let (file_info, output_buf) = match new_compile_info(source_path.to_string()) {
+            Ok(compile_info) => compile_info,
+            Err(err) => {
+                eprintln!("{}", err);
+                return;
+            }
+        };
         match compile(file_info, output_buf) {
             Ok(()) => {}
             Err(err) => {
-                eprintln!("{:?}", err);
+                eprintln!("{}", err);
+                return;
             }
         };
     }
-    Ok(())
 }
 
 fn compile(file_info: Rc<FileInfo>, mut output_buf: BufWriter<File>) -> Result<(), Error> {
