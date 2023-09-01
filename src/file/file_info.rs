@@ -1,7 +1,7 @@
 use crate::error::Error;
 use std::io::Read;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileInfo {
     name: String,
     code: String,

@@ -1,5 +1,5 @@
 use super::file_info::FileInfo;
-use std::rc::Rc;
+use std::{fmt, rc::Rc};
 
 #[derive(Clone, Debug)]
 pub struct Position {
@@ -34,5 +34,19 @@ impl Position {
             .nth(self.line - 1)
             .unwrap();
         (self.file_info.get_name(), self.line, code, self.column)
+    }
+}
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let (file_name, line, code, indent) = self.get_position();
+        writeln!(
+            f,
+            "{}:{}\n{}\n{}^",
+            file_name,
+            line,
+            code,
+            " ".repeat(indent - 1)
+        )
     }
 }

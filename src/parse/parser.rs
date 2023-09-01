@@ -33,31 +33,32 @@ impl Parser {
     }
 
     fn parse_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
-        if let Some(token) = token_stream.peek() {
-            let stmt = match *token.kind {
-                TokenKind::Return => self.parse_return_stmt(token_stream)?,
-                TokenKind::If => self.parse_if_stmt(token_stream)?,
-                TokenKind::For => self.parse_for_stmt(token_stream)?,
-                TokenKind::While => self.parse_while_stmt(token_stream)?,
-                TokenKind::Punc(PuncToken::OpenCurly) => self.parse_cpd_stmt(token_stream)?,
-                _ => self.parse_expr_stmt(token_stream)?,
-            };
-            return Ok(stmt);
-        }
-        Err(Error::new_unexpected())
+        let stmt = if token_stream.consume(TokenKind::Return)? {
+            self.parse_return_stmt(token_stream)?
+        } else if token_stream.consume(TokenKind::If)? {
+            self.parse_if_stmt(token_stream)?
+        } else if token_stream.consume(TokenKind::For)? {
+            self.parse_for_stmt(token_stream)?
+        } else if token_stream.consume(TokenKind::While)? {
+            self.parse_while_stmt(token_stream)?
+        } else if token_stream.consume(TokenKind::Punc(PuncToken::OpenCurly))? {
+            self.parse_cpd_stmt(token_stream)?
+        } else {
+            self.parse_expr_stmt(token_stream)?
+        };
+        Ok(stmt)
     }
 
     fn parse_return_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
-        token_stream.expect(TokenKind::Return)?;
-        if let Some(token) = token_stream.peek() {
-            if *token.kind == TokenKind::Punc(PuncToken::Semicolon) {
-                return Ok(Stmt::new_return(None, token.position));
-            }
+        let token = token_stream.expect(TokenKind::Return)?;
+        let stmt = if token_stream.consume(TokenKind::Punc(PuncToken::Semicolon))? {
+            Stmt::new_return(None, token.position)
+        } else {
             let expr = self.parse_expr(token_stream)?;
             token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
-            return Ok(Stmt::new_return(Some(expr), token.position));
-        }
-        Err(Error::new_unexpected())
+            Stmt::new_return(Some(expr), token.position)
+        };
+        Ok(stmt)
     }
 
     fn parse_if_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
@@ -66,7 +67,7 @@ impl Parser {
         let condition = self.parse_expr(token_stream)?;
         token_stream.expect(TokenKind::Punc(PuncToken::CloseRound))?;
         let then_stmt = self.parse_stmt(token_stream)?;
-        if let Some(token) = token_stream.consume(TokenKind::Else) {
+        if token_stream.consume(TokenKind::Else)? {
             let else_stmt = self.parse_stmt(token_stream)?;
             return Ok(Stmt::new_if(
                 condition,
@@ -81,30 +82,21 @@ impl Parser {
     fn parse_for_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
         let token = token_stream.expect(TokenKind::For)?;
         token_stream.expect(TokenKind::Punc(PuncToken::OpenRound))?;
-        let init = if token_stream
-            .consume(TokenKind::Punc(PuncToken::Semicolon))
-            .is_some()
-        {
+        let init = if token_stream.consume(TokenKind::Punc(PuncToken::Semicolon))? {
             None
         } else {
             let condition = self.parse_expr(token_stream)?;
             token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
             Some(condition)
         };
-        let condition = if token_stream
-            .consume(TokenKind::Punc(PuncToken::Semicolon))
-            .is_some()
-        {
+        let condition = if token_stream.consume(TokenKind::Punc(PuncToken::Semicolon))? {
             None
         } else {
             let condition = self.parse_expr(token_stream)?;
             token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
             Some(condition)
         };
-        let delta = if token_stream
-            .consume(TokenKind::Punc(PuncToken::CloseRound))
-            .is_some()
-        {
+        let delta = if token_stream.consume(TokenKind::Punc(PuncToken::CloseRound))? {
             None
         } else {
             let condition = self.parse_expr(token_stream)?;
@@ -133,32 +125,26 @@ impl Parser {
     fn parse_cpd_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
         let token = token_stream.expect(TokenKind::Punc(PuncToken::OpenCurly))?;
         let mut stmts = vec![];
-        while token_stream
-            .consume(TokenKind::Punc(PuncToken::CloseCurly))
-            .is_none()
-        {
+        while token_stream.consume(TokenKind::Punc(PuncToken::CloseCurly))? {
             stmts.push(self.parse_stmt(token_stream)?);
         }
         Ok(Stmt::new_cpd(stmts, token.position))
     }
 
     fn parse_expr_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
-        if let Some(token) = token_stream.peek() {
-            if *token.kind == TokenKind::Punc(PuncToken::Semicolon) {
-                return Ok(Stmt::new_expr(None, token.position));
-            }
-            let expr = self.parse_expr(token_stream)?;
-            token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
-            return Ok(Stmt::new_expr(Some(expr), token.position));
+        let token = token_stream.peek()?;
+        if *token.kind == TokenKind::Punc(PuncToken::Semicolon) {
+            return Ok(Stmt::new_expr(None, token.position));
         }
-        Err(Error::new_unexpected())
+        let expr = self.parse_expr(token_stream)?;
+        token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
+        Ok(Stmt::new_expr(Some(expr), token.position))
     }
 
     fn parse_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut expr = self.parse_assignment_expr(token_stream)?;
-        while let Some(Token { position, .. }) =
-            token_stream.consume(TokenKind::Punc(PuncToken::Comma))
-        {
+        while token_stream.consume(TokenKind::Punc(PuncToken::Comma))? {
+            let position = token_stream.get_position()?;
             expr = Expr::new_comma(expr, self.parse_assignment_expr(token_stream)?, position)
         }
         Ok(expr)
@@ -167,42 +153,42 @@ impl Parser {
     fn parse_assignment_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut tmp_token_stream = token_stream.clone();
         let lhs = self.parse_unary_expr(&mut tmp_token_stream)?;
-        if let Some(Token { kind, position }) = tmp_token_stream.peek() {
-            let op_kind = match *kind {
-                TokenKind::Punc(punc) => match punc {
-                    PuncToken::Equal => AssignOpKind::Equal,
-                    PuncToken::AsteriskEqual => AssignOpKind::MulEqual,
-                    PuncToken::SlashEqual => AssignOpKind::DivEqual,
-                    PuncToken::PercentEqual => AssignOpKind::RemEqual,
-                    PuncToken::PlusEqual => AssignOpKind::AddEqual,
-                    PuncToken::MinusEqual => AssignOpKind::SubEqual,
-                    PuncToken::LtLtEqual => AssignOpKind::LShiftEqual,
-                    PuncToken::GtGtEqual => AssignOpKind::RShiftEqual,
-                    PuncToken::AndEqual => AssignOpKind::BitAndEqual,
-                    PuncToken::HatEqual => AssignOpKind::BitXorEqual,
-                    PuncToken::VertEqual => AssignOpKind::BitOrEqual,
-                    _ => return self.parse_conditional_expr(token_stream),
-                },
+        let token = tmp_token_stream.peek()?;
+        let op_kind = match *token.kind {
+            TokenKind::Punc(punc) => match punc {
+                PuncToken::Equal => AssignOpKind::Equal,
+                PuncToken::AsteriskEqual => AssignOpKind::MulEqual,
+                PuncToken::SlashEqual => AssignOpKind::DivEqual,
+                PuncToken::PercentEqual => AssignOpKind::RemEqual,
+                PuncToken::PlusEqual => AssignOpKind::AddEqual,
+                PuncToken::MinusEqual => AssignOpKind::SubEqual,
+                PuncToken::LtLtEqual => AssignOpKind::LShiftEqual,
+                PuncToken::GtGtEqual => AssignOpKind::RShiftEqual,
+                PuncToken::AndEqual => AssignOpKind::BitAndEqual,
+                PuncToken::HatEqual => AssignOpKind::BitXorEqual,
+                PuncToken::VertEqual => AssignOpKind::BitOrEqual,
                 _ => return self.parse_conditional_expr(token_stream),
-            };
-            tmp_token_stream.next();
-            let rhs = self.parse_assignment_expr(&mut tmp_token_stream)?;
-            *token_stream = tmp_token_stream;
-            return Ok(Expr::new_assign(op_kind, lhs, rhs, position));
-        }
-        Err(Error::new_unexpected())
+            },
+            _ => return self.parse_conditional_expr(token_stream),
+        };
+        tmp_token_stream.next()?;
+        let rhs = self.parse_assignment_expr(&mut tmp_token_stream)?;
+        *token_stream = tmp_token_stream;
+        Ok(Expr::new_assign(op_kind, lhs, rhs, token.position))
     }
 
     fn parse_conditional_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let condition = self.parse_logical_or_expr(token_stream)?;
-        if let Some(Token { position, .. }) =
-            token_stream.consume(TokenKind::Punc(PuncToken::Question))
-        {
+        if token_stream.consume(TokenKind::Punc(PuncToken::Question))? {
+            let token = token_stream.next()?;
             let then_expr = self.parse_expr(token_stream)?;
             token_stream.expect(TokenKind::Punc(PuncToken::Colon))?;
             let else_expr = self.parse_conditional_expr(token_stream)?;
             return Ok(Expr::new_condition(
-                condition, then_expr, else_expr, position,
+                condition,
+                then_expr,
+                else_expr,
+                token.position,
             ));
         }
         Ok(condition)
@@ -210,62 +196,58 @@ impl Parser {
 
     fn parse_logical_or_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_logical_and_expr(token_stream)?;
-        while let Some(Token { position, .. }) =
-            token_stream.consume(TokenKind::Punc(PuncToken::VertVert))
-        {
+        while token_stream.consume(TokenKind::Punc(PuncToken::VertVert))? {
+            let token = token_stream.next()?;
             let rhs = self.parse_logical_and_expr(token_stream)?;
-            lhs = Expr::new_binary(BinaryOpKind::LogicOr, lhs, rhs, position);
+            lhs = Expr::new_binary(BinaryOpKind::LogicOr, lhs, rhs, token.position);
         }
         Ok(lhs)
     }
 
     fn parse_logical_and_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_inclusive_or_expr(token_stream)?;
-        while let Some(Token { position, .. }) =
-            token_stream.consume(TokenKind::Punc(PuncToken::AndAnd))
-        {
+        while token_stream.consume(TokenKind::Punc(PuncToken::AndAnd))? {
+            let token = token_stream.next()?;
             let rhs = self.parse_inclusive_or_expr(token_stream)?;
-            lhs = Expr::new_binary(BinaryOpKind::LogicAnd, lhs, rhs, position);
+            lhs = Expr::new_binary(BinaryOpKind::LogicAnd, lhs, rhs, token.position);
         }
         Ok(lhs)
     }
 
     fn parse_inclusive_or_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_exclusive_or_expr(token_stream)?;
-        while let Some(Token { position, .. }) =
-            token_stream.consume(TokenKind::Punc(PuncToken::Vert))
-        {
+        while token_stream.consume(TokenKind::Punc(PuncToken::Vert))? {
+            let token = token_stream.next()?;
             let rhs = self.parse_exclusive_or_expr(token_stream)?;
-            lhs = Expr::new_binary(BinaryOpKind::BitOr, lhs, rhs, position);
+            lhs = Expr::new_binary(BinaryOpKind::BitOr, lhs, rhs, token.position);
         }
         Ok(lhs)
     }
 
     fn parse_exclusive_or_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_and_expr(token_stream)?;
-        while let Some(Token { position, .. }) =
-            token_stream.consume(TokenKind::Punc(PuncToken::Hat))
-        {
+        while token_stream.consume(TokenKind::Punc(PuncToken::Hat))? {
+            let token = token_stream.next()?;
             let rhs = self.parse_and_expr(token_stream)?;
-            lhs = Expr::new_binary(BinaryOpKind::BitXor, lhs, rhs, position);
+            lhs = Expr::new_binary(BinaryOpKind::BitXor, lhs, rhs, token.position);
         }
         Ok(lhs)
     }
 
     fn parse_and_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_equality_expr(token_stream)?;
-        while let Some(Token { position, .. }) =
-            token_stream.consume(TokenKind::Punc(PuncToken::And))
-        {
+        while token_stream.consume(TokenKind::Punc(PuncToken::And))? {
+            let token = token_stream.next()?;
             let rhs = self.parse_equality_expr(token_stream)?;
-            lhs = Expr::new_binary(BinaryOpKind::BitAnd, lhs, rhs, position);
+            lhs = Expr::new_binary(BinaryOpKind::BitAnd, lhs, rhs, token.position);
         }
         Ok(lhs)
     }
 
     fn parse_equality_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_relational_expr(token_stream)?;
-        while let Some(Token { kind, position }) = token_stream.peek() {
+        loop {
+            let Token { kind, position } = token_stream.peek()?;
             let op_kind = match *kind {
                 TokenKind::Punc(punc) => match punc {
                     PuncToken::EqualEqual => BinaryOpKind::Eq,
@@ -274,7 +256,7 @@ impl Parser {
                 },
                 _ => break,
             };
-            token_stream.next();
+            token_stream.next()?;
             let rhs = self.parse_relational_expr(token_stream)?;
             lhs = Expr::new_binary(op_kind, lhs, rhs, position);
         }
@@ -283,7 +265,8 @@ impl Parser {
 
     fn parse_relational_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_shift_expr(token_stream)?;
-        while let Some(Token { kind, position }) = token_stream.peek() {
+        loop {
+            let Token { kind, position } = token_stream.peek()?;
             let op_kind = match *kind {
                 TokenKind::Punc(punc) => match punc {
                     PuncToken::Lt => BinaryOpKind::Lt,
@@ -294,7 +277,7 @@ impl Parser {
                 },
                 _ => break,
             };
-            token_stream.next();
+            token_stream.next()?;
             let rhs = self.parse_shift_expr(token_stream)?;
             lhs = Expr::new_binary(op_kind, lhs, rhs, position);
         }
@@ -303,7 +286,8 @@ impl Parser {
 
     fn parse_shift_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_additive_expr(token_stream)?;
-        while let Some(Token { kind, position }) = token_stream.peek() {
+        loop {
+            let Token { kind, position } = token_stream.peek()?;
             let op_kind = match *kind {
                 TokenKind::Punc(punc) => match punc {
                     PuncToken::LtLt => BinaryOpKind::LShift,
@@ -312,7 +296,7 @@ impl Parser {
                 },
                 _ => break,
             };
-            token_stream.next();
+            token_stream.next()?;
             let rhs = self.parse_additive_expr(token_stream)?;
             lhs = Expr::new_binary(op_kind, lhs, rhs, position);
         }
@@ -321,7 +305,8 @@ impl Parser {
 
     fn parse_additive_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_multiplicative_expr(token_stream)?;
-        while let Some(Token { kind, position }) = token_stream.peek() {
+        loop {
+            let Token { kind, position } = token_stream.peek()?;
             let op_kind = match *kind {
                 TokenKind::Punc(punc) => match punc {
                     PuncToken::Plus => BinaryOpKind::Add,
@@ -330,7 +315,7 @@ impl Parser {
                 },
                 _ => break,
             };
-            token_stream.next();
+            token_stream.next()?;
             let rhs = self.parse_multiplicative_expr(token_stream)?;
             lhs = Expr::new_binary(op_kind, lhs, rhs, position);
         }
@@ -339,7 +324,8 @@ impl Parser {
 
     fn parse_multiplicative_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut lhs = self.parse_cast_expr(token_stream)?;
-        while let Some(Token { kind, position }) = token_stream.peek() {
+        loop {
+            let Token { kind, position } = token_stream.peek()?;
             let op_kind = match *kind {
                 TokenKind::Punc(punc) => match punc {
                     PuncToken::Asterisk => BinaryOpKind::Mul,
@@ -349,7 +335,7 @@ impl Parser {
                 },
                 _ => break,
             };
-            token_stream.next();
+            token_stream.next()?;
             let rhs = self.parse_cast_expr(token_stream)?;
             lhs = Expr::new_binary(op_kind, lhs, rhs, position);
         }
@@ -361,18 +347,15 @@ impl Parser {
     }
 
     fn parse_unary_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
-        let (kind, position) = match token_stream.peek() {
-            Some(Token { kind, position }) => (kind, position),
-            None => return Err(Error::new_unexpected()),
-        };
+        let Token { kind, position } = token_stream.peek()?;
         Ok(match *kind {
             TokenKind::Punc(punc) => match punc {
                 PuncToken::PlusPlus => {
-                    token_stream.next();
+                    token_stream.next()?;
                     Expr::new_unary_increment(self.parse_postfix_expr(token_stream)?, position)
                 }
                 PuncToken::MinusMinus => {
-                    token_stream.next();
+                    token_stream.next()?;
                     Expr::new_unary_decrement(self.parse_postfix_expr(token_stream)?, position)
                 }
                 _ => self.parse_postfix_expr(token_stream)?,
@@ -383,31 +366,26 @@ impl Parser {
 
     fn parse_postfix_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut expr = self.parse_primary_expr(token_stream)?;
-        while let Some(Token { kind, position }) = token_stream.peek() {
+        loop {
+            let Token { kind, position } = token_stream.peek()?;
             match *kind {
                 TokenKind::Punc(punc) => match punc {
                     PuncToken::PlusPlus => {
-                        token_stream.next();
+                        token_stream.next()?;
                         expr = Expr::new_postfix_increment(expr, position);
                     }
                     PuncToken::MinusMinus => {
-                        token_stream.next();
+                        token_stream.next()?;
                         expr = Expr::new_postfix_decrement(expr, position);
                     }
                     PuncToken::OpenRound => {
-                        token_stream.next();
+                        token_stream.next()?;
                         let mut args = Vec::new();
-                        if token_stream
-                            .consume(TokenKind::Punc(PuncToken::CloseRound))
-                            .is_some()
-                        {
+                        if token_stream.consume(TokenKind::Punc(PuncToken::CloseRound))? {
                             return Ok(Expr::new_func(expr, args, position));
                         }
                         args.push(self.parse_assignment_expr(token_stream)?);
-                        while token_stream
-                            .consume(TokenKind::Punc(PuncToken::CloseRound))
-                            .is_none()
-                        {
+                        while !token_stream.consume(TokenKind::Punc(PuncToken::CloseRound))? {
                             token_stream.expect(TokenKind::Punc(PuncToken::Comma))?;
                             args.push(self.parse_assignment_expr(token_stream)?);
                         }
@@ -422,19 +400,21 @@ impl Parser {
     }
 
     fn parse_primary_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
-        let (kind, position) = match token_stream.next() {
-            Some(Token { kind, position }) => (kind, position),
-            None => return Err(Error::new_unexpected()),
-        };
-        let expr = match *kind {
-            TokenKind::Number(number) => Expr::new_number(number, position),
-            TokenKind::Ident(name) => Expr::new_ident(name, position),
+        let token = token_stream.next()?;
+        let expr = match *token.kind {
+            TokenKind::Number(number) => Expr::new_number(number, token.position),
+            TokenKind::Ident(name) => Expr::new_ident(name, token.position),
             TokenKind::Punc(PuncToken::OpenRound) => {
                 let expr = self.parse_expr(token_stream)?;
                 token_stream.expect(TokenKind::Punc(PuncToken::CloseRound))?;
                 expr
             }
-            _ => return Err(Error::new_unexpected()),
+            _ => {
+                return Err(Error::new_unexpected_token(
+                    token,
+                    "primary expr".to_string(),
+                ))
+            }
         };
         Ok(expr)
     }
