@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::{error::Error, file::position::Position};
 
 use super::{token::Token, token_kind::TokenKind};
 use std::collections::VecDeque;
@@ -13,44 +13,39 @@ impl TokenStream {
         Self { tokens }
     }
 
-    pub fn consume(&mut self, kind: TokenKind) -> Option<Token> {
-        if let Some(token) = self.peek() {
-            if *token.kind == kind {
-                return self.next();
-            }
-        }
-        None
+    pub fn consume(&mut self, kind: TokenKind) -> Result<bool, Error> {
+        let token = self.peek()?;
+        Ok(*token.kind == kind)
     }
 
     pub fn expect(&mut self, kind: TokenKind) -> Result<Token, Error> {
-        if let Some(token) = self.next() {
-            if *token.kind == kind {
-                return Ok(token);
-            }
-            return Err(Error::new_unexpected_token(
-                token.position,
-                kind,
-                *token.kind,
-            ));
+        let token = self.next()?;
+        if *token.kind == kind {
+            return Ok(token);
         }
-        Err(Error::new_unexpected())
+        Err(Error::new_unexpected_token(token, format!("{:?}", kind)))
     }
 
     pub fn at_eof(&self) -> Result<bool, Error> {
-        if let Some(Token { kind, .. }) = self.peek() {
-            return Ok(*kind == TokenKind::Eof);
+        Ok(*self.peek()?.kind == TokenKind::Eof)
+    }
+
+    pub fn next(&mut self) -> Result<Token, Error> {
+        if let Some(token) = self.tokens.pop_front() {
+            return Ok(token);
         }
         Err(Error::new_unexpected())
     }
 
-    pub fn next(&mut self) -> Option<Token> {
-        if self.tokens.len() <= 1 {
-            return self.peek();
+    pub fn peek(&self) -> Result<Token, Error> {
+        if let Some(token) = self.tokens.front() {
+            return Ok(token.clone());
         }
-        self.tokens.pop_front()
+        Err(Error::new_unexpected())
     }
 
-    pub fn peek(&self) -> Option<Token> {
-        self.tokens.front().cloned()
+    pub fn get_position(&self) -> Result<Position, Error> {
+        let token = self.peek()?;
+        Ok(token.position)
     }
 }
