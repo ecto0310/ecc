@@ -401,7 +401,7 @@ impl Generator {
         args: Vec<GenExpr>,
     ) -> Result<(), Error> {
         let arg_len = args.len();
-        let stack: usize = std::cmp::max(arg_len - 6, 0);
+        let stack: usize = if 6 < arg_len { arg_len - 6 } else { 0 };
         let stack_adjust = (self.stack + stack) % 2 == 1;
         if stack_adjust {
             writeln!(f, "\tsub {}, 8", Reg::Rsp.qword())?;
@@ -436,11 +436,9 @@ impl Generator {
         f: &mut BufWriter<File>,
         args: Vec<GenExpr>,
     ) -> Result<(), Error> {
-        let arg_len = args.len() as i32;
         for arg in args.into_iter().rev() {
             self.generate_expr(f, arg)?;
         }
-        self.generate_push_with_num(f, arg_len)?;
         Ok(())
     }
 
@@ -449,16 +447,8 @@ impl Generator {
         f: &mut BufWriter<File>,
         length: usize,
     ) -> Result<(), Error> {
-        let regs = vec![
-            Reg::Rax,
-            Reg::Rdi,
-            Reg::Rsi,
-            Reg::Rdx,
-            Reg::Rcx,
-            Reg::R8,
-            Reg::R9,
-        ];
-        for reg in regs.iter().take(std::cmp::min(length + 1, 7)) {
+        let regs = vec![Reg::Rdi, Reg::Rsi, Reg::Rdx, Reg::Rcx, Reg::R8, Reg::R9];
+        for reg in regs.iter().take(std::cmp::min(length, 6)) {
             self.generate_pop(f, reg.clone())?;
         }
         Ok(())
