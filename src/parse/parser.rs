@@ -52,6 +52,7 @@ impl Parser {
     fn parse_return_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
         let token = token_stream.expect(TokenKind::Return)?;
         let stmt = if token_stream.consume(TokenKind::Punc(PuncToken::Semicolon))? {
+            token_stream.next()?;
             Stmt::new_return(None, token.position)
         } else {
             let expr = self.parse_expr(token_stream)?;
@@ -68,6 +69,7 @@ impl Parser {
         token_stream.expect(TokenKind::Punc(PuncToken::CloseRound))?;
         let then_stmt = self.parse_stmt(token_stream)?;
         if token_stream.consume(TokenKind::Else)? {
+            token_stream.next()?;
             let else_stmt = self.parse_stmt(token_stream)?;
             return Ok(Stmt::new_if(
                 condition,
@@ -86,23 +88,23 @@ impl Parser {
             None
         } else {
             let condition = self.parse_expr(token_stream)?;
-            token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
             Some(condition)
         };
+        token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
         let condition = if token_stream.consume(TokenKind::Punc(PuncToken::Semicolon))? {
             None
         } else {
             let condition = self.parse_expr(token_stream)?;
-            token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
             Some(condition)
         };
+        token_stream.expect(TokenKind::Punc(PuncToken::Semicolon))?;
         let delta = if token_stream.consume(TokenKind::Punc(PuncToken::CloseRound))? {
             None
         } else {
             let condition = self.parse_expr(token_stream)?;
-            token_stream.expect(TokenKind::Punc(PuncToken::CloseRound))?;
             Some(condition)
         };
+        token_stream.expect(TokenKind::Punc(PuncToken::CloseRound))?;
         let run_stmt = self.parse_stmt(token_stream)?;
         Ok(Stmt::new_for(
             init,
@@ -125,9 +127,10 @@ impl Parser {
     fn parse_cpd_stmt(&mut self, token_stream: &mut TokenStream) -> Result<Stmt, Error> {
         let token = token_stream.expect(TokenKind::Punc(PuncToken::OpenCurly))?;
         let mut stmts = vec![];
-        while token_stream.consume(TokenKind::Punc(PuncToken::CloseCurly))? {
+        while !token_stream.consume(TokenKind::Punc(PuncToken::CloseCurly))? {
             stmts.push(self.parse_stmt(token_stream)?);
         }
+        token_stream.next()?;
         Ok(Stmt::new_cpd(stmts, token.position))
     }
 
@@ -144,6 +147,7 @@ impl Parser {
     fn parse_expr(&mut self, token_stream: &mut TokenStream) -> Result<Expr, Error> {
         let mut expr = self.parse_assignment_expr(token_stream)?;
         while token_stream.consume(TokenKind::Punc(PuncToken::Comma))? {
+            token_stream.next()?;
             let position = token_stream.get_position()?;
             expr = Expr::new_comma(expr, self.parse_assignment_expr(token_stream)?, position)
         }
@@ -382,6 +386,7 @@ impl Parser {
                         token_stream.next()?;
                         let mut args = Vec::new();
                         if token_stream.consume(TokenKind::Punc(PuncToken::CloseRound))? {
+                            token_stream.next()?;
                             return Ok(Expr::new_func(expr, args, position));
                         }
                         args.push(self.parse_assignment_expr(token_stream)?);
@@ -389,6 +394,7 @@ impl Parser {
                             token_stream.expect(TokenKind::Punc(PuncToken::Comma))?;
                             args.push(self.parse_assignment_expr(token_stream)?);
                         }
+                        token_stream.next()?;
                         return Ok(Expr::new_func(expr, args, position));
                     }
                     _ => break,
