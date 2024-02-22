@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, VecDeque};
 
 use crate::{
-    error::Error,
     file::position::Position,
     parse::{
         row_expr::{RowAssignOpKind, RowBinaryOpKind, RowExpr, RowExprKind},
@@ -30,16 +29,16 @@ impl Analyzer {
         }
     }
 
-    pub fn analyze(&mut self, row_program: RowProgram) -> Result<Program, Error> {
-        let stmts: Result<VecDeque<Stmt>, Error> = row_program
+    pub fn analyze(&mut self, row_program: RowProgram) -> anyhow::Result<Program> {
+        let stmts = row_program
             .stmts
             .into_iter()
             .map(|stmt| self.analyze_stmt(stmt))
-            .collect();
-        Ok(Program::new(stmts?, self.offset))
+            .collect::<anyhow::Result<VecDeque<Stmt>>>()?;
+        Ok(Program::new(stmts, self.offset))
     }
 
-    fn analyze_stmt(&mut self, row_stmt: RowStmt) -> Result<Stmt, Error> {
+    fn analyze_stmt(&mut self, row_stmt: RowStmt) -> anyhow::Result<Stmt> {
         let position = row_stmt.position;
         Ok(match row_stmt.kind {
             RowStmtKind::Expr { expr } => self.analyze_stmt_expr(expr, position)?,
@@ -69,7 +68,7 @@ impl Analyzer {
         &mut self,
         row_expr: Option<RowExpr>,
         position: Position,
-    ) -> Result<Stmt, Error> {
+    ) -> anyhow::Result<Stmt> {
         let expr = if let Some(row_expr) = row_expr {
             Some(self.analyze_expr(row_expr)?)
         } else {
@@ -82,7 +81,7 @@ impl Analyzer {
         &mut self,
         row_expr: Option<RowExpr>,
         position: Position,
-    ) -> Result<Stmt, Error> {
+    ) -> anyhow::Result<Stmt> {
         let expr = if let Some(row_expr) = row_expr {
             Some(self.analyze_expr(row_expr)?)
         } else {
@@ -97,7 +96,7 @@ impl Analyzer {
         row_then_stmt: RowStmt,
         row_else_stmt: Option<RowStmt>,
         position: Position,
-    ) -> Result<Stmt, Error> {
+    ) -> anyhow::Result<Stmt> {
         let condition_expr = self.analyze_expr(row_condition_expr)?;
         let then_stmt = self.analyze_stmt(row_then_stmt)?;
         let else_stmt = if let Some(row_else_stmt) = row_else_stmt {
@@ -115,7 +114,7 @@ impl Analyzer {
         row_delta_expr: Option<RowExpr>,
         row_run_stmt: RowStmt,
         position: Position,
-    ) -> Result<Stmt, Error> {
+    ) -> anyhow::Result<Stmt> {
         let init_expr = if let Some(row_init_expr) = row_init_expr {
             Some(self.analyze_expr(row_init_expr)?)
         } else {
@@ -146,21 +145,25 @@ impl Analyzer {
         row_condition_expr: RowExpr,
         row_run_stmt: RowStmt,
         position: Position,
-    ) -> Result<Stmt, Error> {
+    ) -> anyhow::Result<Stmt> {
         let condition_expr = self.analyze_expr(row_condition_expr)?;
         let run_stmt = self.analyze_stmt(row_run_stmt)?;
         Ok(Stmt::new_while(condition_expr, run_stmt, position))
     }
 
-    fn analyze_stmt_cpd(&mut self, stmts: Vec<RowStmt>, position: Position) -> Result<Stmt, Error> {
-        let stmts: Result<Vec<Stmt>, Error> = stmts
+    fn analyze_stmt_cpd(
+        &mut self,
+        stmts: Vec<RowStmt>,
+        position: Position,
+    ) -> anyhow::Result<Stmt> {
+        let stmts = stmts
             .into_iter()
             .map(|stmt| self.analyze_stmt(stmt))
-            .collect();
-        Ok(Stmt::new_cpd(stmts?, position))
+            .collect::<anyhow::Result<Vec<Stmt>>>()?;
+        Ok(Stmt::new_cpd(stmts, position))
     }
 
-    fn analyze_expr(&mut self, row_expr: RowExpr) -> Result<Expr, Error> {
+    fn analyze_expr(&mut self, row_expr: RowExpr) -> anyhow::Result<Expr> {
         let position = row_expr.position;
         Ok(match row_expr.kind {
             RowExprKind::Binary {
@@ -228,14 +231,14 @@ impl Analyzer {
                 row_name_expr,
                 row_args_expr,
             } => {
-                let args: Result<Vec<Expr>, Error> = row_args_expr
+                let args = row_args_expr
                     .into_iter()
                     .map(|arg| self.analyze_expr(arg))
-                    .collect();
+                    .collect::<anyhow::Result<Vec<Expr>>>()?;
                 if let RowExprKind::Identifier { ident } = row_name_expr.kind {
-                    Expr::new_func_label(ident, args?, position)
+                    Expr::new_func_label(ident, args, position)
                 } else {
-                    Expr::new_func_expr(self.analyze_expr(*row_name_expr)?, args?, position)
+                    Expr::new_func_expr(self.analyze_expr(*row_name_expr)?, args, position)
                 }
             }
         })
@@ -247,7 +250,7 @@ impl Analyzer {
         row_lhs_expr: RowExpr,
         row_rhs_expr: RowExpr,
         position: Position,
-    ) -> Result<Expr, Error> {
+    ) -> anyhow::Result<Expr> {
         Ok(match row_binary_op_kind {
             RowBinaryOpKind::LogicAnd => Expr::new_condition(
                 self.analyze_expr(row_lhs_expr)?,
@@ -288,7 +291,7 @@ impl Analyzer {
         row_lhs_expr: RowExpr,
         row_rhs_expr: RowExpr,
         position: Position,
-    ) -> Result<Expr, Error> {
+    ) -> anyhow::Result<Expr> {
         let lhs = self.analyze_expr(row_lhs_expr)?;
         let rhs = self.analyze_expr(row_rhs_expr)?;
         let binary_op_kind = BinaryOpKind::from_row_assign_op_kind(row_assign_op_kind)?;

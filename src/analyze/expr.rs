@@ -1,5 +1,6 @@
+use anyhow::anyhow;
+
 use crate::{
-    error::Error,
     file::position::Position,
     parse::row_expr::{RowAssignOpKind, RowBinaryOpKind},
 };
@@ -188,7 +189,7 @@ pub enum BinaryOpKind {
 }
 
 impl BinaryOpKind {
-    pub fn from_row_binary_op_kind(row: RowBinaryOpKind) -> Result<Self, Error> {
+    pub fn from_row_binary_op_kind(row: RowBinaryOpKind) -> anyhow::Result<Self> {
         match row {
             RowBinaryOpKind::Add => Ok(Self::Add),
             RowBinaryOpKind::Sub => Ok(Self::Sub),
@@ -198,8 +199,8 @@ impl BinaryOpKind {
             RowBinaryOpKind::BitAnd => Ok(Self::BitAnd),
             RowBinaryOpKind::BitOr => Ok(Self::BitOr),
             RowBinaryOpKind::BitXor => Ok(Self::BitXor),
-            RowBinaryOpKind::LogicAnd => Err(Error::new_unexpected()),
-            RowBinaryOpKind::LogicOr => Err(Error::new_unexpected()),
+            RowBinaryOpKind::LogicAnd => Err(anyhow!("Unexpected LogicAnd operater convert")),
+            RowBinaryOpKind::LogicOr => Err(anyhow!("Unexpected LogicOr operater convert")),
             RowBinaryOpKind::LShift => Ok(Self::LShift),
             RowBinaryOpKind::RShift => Ok(Self::RShift),
             RowBinaryOpKind::Lt => Ok(Self::Lt),
@@ -211,7 +212,7 @@ impl BinaryOpKind {
         }
     }
 
-    pub fn from_row_assign_op_kind(row: RowAssignOpKind) -> Result<Self, Error> {
+    pub fn from_row_assign_op_kind(row: RowAssignOpKind) -> anyhow::Result<Self> {
         match row {
             RowAssignOpKind::Equal => Ok(Self::Eq),
             RowAssignOpKind::MulEqual => Ok(Self::Mul),

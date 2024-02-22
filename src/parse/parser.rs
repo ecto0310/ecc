@@ -1,12 +1,11 @@
 use std::collections::VecDeque;
 
-use crate::{
-    error::Error,
-    tokenize::{
-        token::Token,
-        token_kind::{PuncToken, TokenKind},
-        token_stream::TokenStream,
-    },
+use anyhow::anyhow;
+
+use crate::tokenize::{
+    token::Token,
+    token_kind::{PuncToken, TokenKind},
+    token_stream::TokenStream,
 };
 
 use super::{
@@ -22,7 +21,7 @@ impl Parser {
         Self {}
     }
 
-    pub fn parse(&mut self, token_stream: &mut TokenStream) -> Result<RowProgram, Error> {
+    pub fn parse(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowProgram> {
         let mut stmts = VecDeque::new();
         while !token_stream.at_eof()? {
             let stmt = self.parse_stmt(token_stream)?;
@@ -31,7 +30,7 @@ impl Parser {
         Ok(RowProgram::new(stmts))
     }
 
-    fn parse_stmt(&mut self, token_stream: &mut TokenStream) -> Result<RowStmt, Error> {
+    fn parse_stmt(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowStmt> {
         let stmt = if token_stream.consume(TokenKind::Return)? {
             self.parse_return_stmt(token_stream)?
         } else if token_stream.consume(TokenKind::If)? {
@@ -48,7 +47,7 @@ impl Parser {
         Ok(stmt)
     }
 
-    fn parse_return_stmt(&mut self, token_stream: &mut TokenStream) -> Result<RowStmt, Error> {
+    fn parse_return_stmt(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowStmt> {
         let token = token_stream.expect(TokenKind::Return)?;
         let stmt = if token_stream.consume(TokenKind::Punc(PuncToken::Semicolon))? {
             token_stream.next()?;
@@ -61,7 +60,7 @@ impl Parser {
         Ok(stmt)
     }
 
-    fn parse_if_stmt(&mut self, token_stream: &mut TokenStream) -> Result<RowStmt, Error> {
+    fn parse_if_stmt(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowStmt> {
         let token = token_stream.expect(TokenKind::If)?;
         token_stream.expect(TokenKind::Punc(PuncToken::OpenRound))?;
         let condition = self.parse_expr(token_stream)?;
@@ -80,7 +79,7 @@ impl Parser {
         Ok(RowStmt::new_if(condition, then_stmt, None, token.position))
     }
 
-    fn parse_for_stmt(&mut self, token_stream: &mut TokenStream) -> Result<RowStmt, Error> {
+    fn parse_for_stmt(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowStmt> {
         let token = token_stream.expect(TokenKind::For)?;
         token_stream.expect(TokenKind::Punc(PuncToken::OpenRound))?;
         let init = if token_stream.consume(TokenKind::Punc(PuncToken::Semicolon))? {
@@ -114,7 +113,7 @@ impl Parser {
         ))
     }
 
-    fn parse_while_stmt(&mut self, token_stream: &mut TokenStream) -> Result<RowStmt, Error> {
+    fn parse_while_stmt(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowStmt> {
         let token = token_stream.expect(TokenKind::While)?;
         token_stream.expect(TokenKind::Punc(PuncToken::OpenRound))?;
         let condition = self.parse_expr(token_stream)?;
@@ -123,7 +122,7 @@ impl Parser {
         Ok(RowStmt::new_while(condition, run_stmt, token.position))
     }
 
-    fn parse_cpd_stmt(&mut self, token_stream: &mut TokenStream) -> Result<RowStmt, Error> {
+    fn parse_cpd_stmt(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowStmt> {
         let token = token_stream.expect(TokenKind::Punc(PuncToken::OpenCurly))?;
         let mut stmts = vec![];
         while !token_stream.consume(TokenKind::Punc(PuncToken::CloseCurly))? {
@@ -133,7 +132,7 @@ impl Parser {
         Ok(RowStmt::new_cpd(stmts, token.position))
     }
 
-    fn parse_expr_stmt(&mut self, token_stream: &mut TokenStream) -> Result<RowStmt, Error> {
+    fn parse_expr_stmt(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowStmt> {
         let token = token_stream.peek()?;
         if *token.kind == TokenKind::Punc(PuncToken::Semicolon) {
             return Ok(RowStmt::new_expr(None, token.position));
@@ -143,7 +142,7 @@ impl Parser {
         Ok(RowStmt::new_expr(Some(expr), token.position))
     }
 
-    fn parse_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut expr = self.parse_assignment_expr(token_stream)?;
         while token_stream.consume(TokenKind::Punc(PuncToken::Comma))? {
             token_stream.next()?;
@@ -153,7 +152,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn parse_assignment_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_assignment_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut tmp_token_stream = token_stream.clone();
         let lhs = self.parse_unary_expr(&mut tmp_token_stream)?;
         let token = tmp_token_stream.peek()?;
@@ -180,7 +179,10 @@ impl Parser {
         Ok(RowExpr::new_assign(op_kind, lhs, rhs, token.position))
     }
 
-    fn parse_conditional_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_conditional_expr(
+        &mut self,
+        token_stream: &mut TokenStream,
+    ) -> anyhow::Result<RowExpr> {
         let condition = self.parse_logical_or_expr(token_stream)?;
         if token_stream.consume(TokenKind::Punc(PuncToken::Question))? {
             let token = token_stream.next()?;
@@ -197,7 +199,7 @@ impl Parser {
         Ok(condition)
     }
 
-    fn parse_logical_or_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_logical_or_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_logical_and_expr(token_stream)?;
         while token_stream.consume(TokenKind::Punc(PuncToken::VertVert))? {
             let token = token_stream.next()?;
@@ -207,7 +209,10 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_logical_and_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_logical_and_expr(
+        &mut self,
+        token_stream: &mut TokenStream,
+    ) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_inclusive_or_expr(token_stream)?;
         while token_stream.consume(TokenKind::Punc(PuncToken::AndAnd))? {
             let token = token_stream.next()?;
@@ -220,7 +225,7 @@ impl Parser {
     fn parse_inclusive_or_expr(
         &mut self,
         token_stream: &mut TokenStream,
-    ) -> Result<RowExpr, Error> {
+    ) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_exclusive_or_expr(token_stream)?;
         while token_stream.consume(TokenKind::Punc(PuncToken::Vert))? {
             let token = token_stream.next()?;
@@ -233,7 +238,7 @@ impl Parser {
     fn parse_exclusive_or_expr(
         &mut self,
         token_stream: &mut TokenStream,
-    ) -> Result<RowExpr, Error> {
+    ) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_and_expr(token_stream)?;
         while token_stream.consume(TokenKind::Punc(PuncToken::Hat))? {
             let token = token_stream.next()?;
@@ -243,7 +248,7 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_and_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_and_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_equality_expr(token_stream)?;
         while token_stream.consume(TokenKind::Punc(PuncToken::And))? {
             let token = token_stream.next()?;
@@ -253,7 +258,7 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_equality_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_equality_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_relational_expr(token_stream)?;
         loop {
             let Token { kind, position } = token_stream.peek()?;
@@ -272,7 +277,7 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_relational_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_relational_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_shift_expr(token_stream)?;
         loop {
             let Token { kind, position } = token_stream.peek()?;
@@ -293,7 +298,7 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_shift_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_shift_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_additive_expr(token_stream)?;
         loop {
             let Token { kind, position } = token_stream.peek()?;
@@ -312,7 +317,7 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_additive_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_additive_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_multiplicative_expr(token_stream)?;
         loop {
             let Token { kind, position } = token_stream.peek()?;
@@ -334,7 +339,7 @@ impl Parser {
     fn parse_multiplicative_expr(
         &mut self,
         token_stream: &mut TokenStream,
-    ) -> Result<RowExpr, Error> {
+    ) -> anyhow::Result<RowExpr> {
         let mut lhs = self.parse_cast_expr(token_stream)?;
         loop {
             let Token { kind, position } = token_stream.peek()?;
@@ -354,11 +359,11 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_cast_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_cast_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         self.parse_unary_expr(token_stream)
     }
 
-    fn parse_unary_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_unary_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let Token { kind, position } = token_stream.peek()?;
         Ok(match *kind {
             TokenKind::Punc(punc) => match punc {
@@ -376,7 +381,7 @@ impl Parser {
         })
     }
 
-    fn parse_postfix_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_postfix_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let mut expr = self.parse_primary_expr(token_stream)?;
         loop {
             let Token { kind, position } = token_stream.peek()?;
@@ -413,7 +418,7 @@ impl Parser {
         Ok(expr)
     }
 
-    fn parse_primary_expr(&mut self, token_stream: &mut TokenStream) -> Result<RowExpr, Error> {
+    fn parse_primary_expr(&mut self, token_stream: &mut TokenStream) -> anyhow::Result<RowExpr> {
         let token = token_stream.next()?;
         let expr = match *token.kind {
             TokenKind::Number(number) => RowExpr::new_number(number, token.position),
@@ -424,10 +429,10 @@ impl Parser {
                 expr
             }
             _ => {
-                return Err(Error::new_unexpected_token(
-                    token,
-                    "primary expr".to_string(),
-                ))
+                return Err(anyhow!(format!(
+                    "{}Got unexpected token `{:?}`. Expect primary",
+                    token.position, token.kind
+                )))
             }
         };
         Ok(expr)

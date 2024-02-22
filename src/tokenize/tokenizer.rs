@@ -2,8 +2,8 @@ use std::collections::VecDeque;
 
 use super::token::Token;
 use super::token_kind::{PuncToken, TokenKind};
-use crate::error::Error;
 use crate::file::file_stream::FileStream;
+use anyhow::anyhow;
 
 pub struct Tokenizer {
     file_stream: FileStream,
@@ -14,7 +14,7 @@ impl Tokenizer {
         Self { file_stream }
     }
 
-    pub fn tokenize(&mut self) -> Result<VecDeque<Token>, Error> {
+    pub fn tokenize(&mut self) -> anyhow::Result<VecDeque<Token>> {
         let mut tokens = VecDeque::new();
 
         'tokenize_loop: while !self.file_stream.is_empty() {
@@ -120,7 +120,10 @@ impl Tokenizer {
                 continue;
             }
             let (position, char) = self.file_stream.advance(1).unwrap();
-            return Err(Error::new_unexpected_char(position, char));
+            return Err(anyhow!(format!(
+                "{}Got unexpected char `{}`",
+                position, char
+            )));
         }
 
         tokens.push_back(Token::new_eof(self.file_stream.advance(1).unwrap().0));

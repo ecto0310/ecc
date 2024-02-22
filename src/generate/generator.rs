@@ -1,10 +1,11 @@
 use std::io::Write;
 use std::{fs::File, io::BufWriter};
 
+use anyhow::anyhow;
+
 use crate::analyze::expr::{BinaryOpKind, Expr, ExprKind, FuncCallKind};
 use crate::analyze::program::Program;
 use crate::analyze::stmt::{Stmt, StmtKind};
-use crate::error::Error;
 
 use super::reg::Reg;
 
@@ -18,7 +19,7 @@ impl Generator {
         Self { label: 0, stack: 0 }
     }
 
-    pub fn generate(&mut self, f: &mut BufWriter<File>, program: Program) -> Result<(), Error> {
+    pub fn generate(&mut self, f: &mut BufWriter<File>, program: Program) -> anyhow::Result<()> {
         writeln!(f, ".intel_syntax noprefix")?;
         writeln!(f, ".globl main")?;
         writeln!(f, "main:")?;
@@ -42,7 +43,7 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_stmt(&mut self, f: &mut BufWriter<File>, stmt: Stmt) -> Result<(), Error> {
+    fn generate_stmt(&mut self, f: &mut BufWriter<File>, stmt: Stmt) -> anyhow::Result<()> {
         match stmt.kind {
             StmtKind::Expr { expr } => {
                 self.generate_stmt_expr(f, expr)?;
@@ -82,7 +83,7 @@ impl Generator {
         &mut self,
         f: &mut BufWriter<File>,
         expr: Option<Expr>,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         if let Some(expr) = expr {
             self.generate_expr(f, expr)?;
             self.generate_pop(f, Reg::Rax)?;
@@ -95,7 +96,7 @@ impl Generator {
         &mut self,
         f: &mut BufWriter<File>,
         expr: Option<Expr>,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         if let Some(expr) = expr {
             self.generate_expr(f, expr)?;
             self.generate_pop(f, Reg::Rax)?;
@@ -109,7 +110,7 @@ impl Generator {
         condition_expr: Expr,
         then_stmt: Stmt,
         else_stmt: Option<Stmt>,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let label_num = self.label_num();
         self.generate_expr(f, condition_expr)?;
         self.generate_pop(f, Reg::Rax)?;
@@ -132,7 +133,7 @@ impl Generator {
         condition_expr: Expr,
         delta_expr: Option<Expr>,
         run_stmt: Stmt,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let label_num = self.label_num();
         if let Some(init_expr) = init_expr {
             self.generate_expr(f, init_expr)?;
@@ -158,7 +159,7 @@ impl Generator {
         f: &mut BufWriter<File>,
         condition_expr: Expr,
         run_stmt: Stmt,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let label_num = self.label_num();
         writeln!(f, ".Lbegin{}:", label_num)?;
         self.generate_expr(f, condition_expr)?;
@@ -175,14 +176,14 @@ impl Generator {
         &mut self,
         f: &mut BufWriter<File>,
         stmts: Vec<Stmt>,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         for stmt in stmts.into_iter() {
             self.generate_stmt(f, stmt)?;
         }
         Ok(())
     }
 
-    fn generate_expr(&mut self, f: &mut BufWriter<File>, expr: Expr) -> Result<(), Error> {
+    fn generate_expr(&mut self, f: &mut BufWriter<File>, expr: Expr) -> anyhow::Result<()> {
         match expr.kind {
             ExprKind::Binary { op_kind, lhs, rhs } => {
                 self.generate_expr_binary(f, op_kind, *lhs, *rhs)?;
@@ -223,7 +224,7 @@ impl Generator {
         op_kind: BinaryOpKind,
         lhs: Expr,
         rhs: Expr,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         self.generate_expr(f, lhs)?;
         self.generate_expr(f, rhs)?;
         self.generate_pop(f, Reg::Rdi)?;
@@ -238,7 +239,7 @@ impl Generator {
         op_kind: BinaryOpKind,
         lhs: Reg,
         rhs: Reg,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         if lhs != Reg::Rax {
             writeln!(f, "\tmov {}, {}", Reg::Rax.qword(), lhs.qword())?;
         }
@@ -312,7 +313,7 @@ impl Generator {
         op_kind: BinaryOpKind,
         lhs: Expr,
         rhs: Expr,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         if op_kind == BinaryOpKind::Eq {
             self.generate_expr_left_var(f, lhs)?;
             self.generate_expr(f, rhs)?;
@@ -342,7 +343,7 @@ impl Generator {
         condition: Expr,
         then_expr: Expr,
         else_expr: Expr,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let label_num = self.label_num();
         self.generate_expr(f, condition)?;
         self.generate_pop(f, Reg::Rax)?;
@@ -360,7 +361,7 @@ impl Generator {
         &mut self,
         f: &mut BufWriter<File>,
         expr: Expr,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         self.generate_expr_left_var(f, expr)?;
         self.generate_pop(f, Reg::Rdi)?;
         writeln!(f, "\tmov {}, [{}]", Reg::Rax.qword(), Reg::Rdi.qword())?;
@@ -374,7 +375,7 @@ impl Generator {
         &mut self,
         f: &mut BufWriter<File>,
         expr: Expr,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         self.generate_expr_left_var(f, expr)?;
         self.generate_pop(f, Reg::Rdi)?;
         writeln!(f, "\tmov {}, [{}]", Reg::Rax.qword(), Reg::Rdi.qword())?;
@@ -389,7 +390,7 @@ impl Generator {
         f: &mut BufWriter<File>,
         name: FuncCallKind,
         args: Vec<Expr>,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let arg_len = args.len();
         let stack: usize = if 6 < arg_len { arg_len - 6 } else { 0 };
         let stack_adjust = (self.stack + stack) % 2 == 1;
@@ -425,7 +426,7 @@ impl Generator {
         &mut self,
         f: &mut BufWriter<File>,
         args: Vec<Expr>,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         for arg in args.into_iter().rev() {
             self.generate_expr(f, arg)?;
         }
@@ -436,7 +437,7 @@ impl Generator {
         &mut self,
         f: &mut BufWriter<File>,
         length: usize,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let regs = vec![Reg::Rdi, Reg::Rsi, Reg::Rdx, Reg::Rcx, Reg::R8, Reg::R9];
         for reg in regs.iter().take(std::cmp::min(length, 6)) {
             self.generate_pop(f, reg.clone())?;
@@ -444,19 +445,28 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_expr_left_var(&mut self, f: &mut BufWriter<File>, expr: Expr) -> Result<(), Error> {
+    fn generate_expr_left_var(
+        &mut self,
+        f: &mut BufWriter<File>,
+        expr: Expr,
+    ) -> anyhow::Result<()> {
         match expr.kind {
             ExprKind::Variable { var } => {
                 writeln!(f, "\tmov {}, {}", Reg::Rax.qword(), Reg::Rbp.qword())?;
                 writeln!(f, "\tsub {}, {}", Reg::Rax.qword(), var.offset)?;
             }
-            _ => return Err(Error::new_unexpected()),
+            _ => {
+                return Err(anyhow!(
+                    "{}Must be a changeable left-hand side value",
+                    expr.position
+                ))
+            }
         }
         self.generate_push_with_reg(f, Reg::Rax)?;
         Ok(())
     }
 
-    fn generate_expr_var(&mut self, f: &mut BufWriter<File>, expr: Expr) -> Result<(), Error> {
+    fn generate_expr_var(&mut self, f: &mut BufWriter<File>, expr: Expr) -> anyhow::Result<()> {
         self.generate_expr_left_var(f, expr)?;
         self.generate_pop(f, Reg::Rax)?;
         writeln!(f, "\tmov {}, [{}]", Reg::Rax.qword(), Reg::Rax.qword())?;
@@ -468,25 +478,25 @@ impl Generator {
         &mut self,
         f: &mut BufWriter<File>,
         number: usize,
-    ) -> Result<(), Error> {
+    ) -> anyhow::Result<()> {
         let number = number as i32;
         self.generate_push_with_num(f, number)?;
         Ok(())
     }
 
-    fn generate_push_with_reg(&mut self, f: &mut BufWriter<File>, reg: Reg) -> Result<(), Error> {
+    fn generate_push_with_reg(&mut self, f: &mut BufWriter<File>, reg: Reg) -> anyhow::Result<()> {
         writeln!(f, "\tpush {}", reg.qword())?;
         self.stack += 1;
         Ok(())
     }
 
-    fn generate_push_with_num(&mut self, f: &mut BufWriter<File>, num: i32) -> Result<(), Error> {
+    fn generate_push_with_num(&mut self, f: &mut BufWriter<File>, num: i32) -> anyhow::Result<()> {
         writeln!(f, "\tpush {}", num)?;
         self.stack += 1;
         Ok(())
     }
 
-    fn generate_pop(&mut self, f: &mut BufWriter<File>, reg: Reg) -> Result<(), Error> {
+    fn generate_pop(&mut self, f: &mut BufWriter<File>, reg: Reg) -> anyhow::Result<()> {
         writeln!(f, "\tpop {}", reg.qword())?;
         self.stack -= 1;
         Ok(())
