@@ -1,11 +1,10 @@
 use std::io::Write;
 use std::{fs::File, io::BufWriter};
 
-use crate::analyze::gen_expr::GenExpr;
-use crate::analyze::gen_expr_kind::{GenBinaryOpKind, GenExprKind, GenFuncCallKind};
-use crate::analyze::gen_stmt::GenStmt;
-use crate::analyze::gen_stmt_kind::GenStmtKind;
-use crate::{analyze::gen_tree::GenTree, error::Error};
+use crate::analyze::expr::{BinaryOpKind, Expr, ExprKind, FuncCallKind};
+use crate::analyze::program::Program;
+use crate::analyze::stmt::{Stmt, StmtKind};
+use crate::error::Error;
 
 use super::reg::Reg;
 
@@ -19,20 +18,20 @@ impl Generator {
         Self { label: 0, stack: 0 }
     }
 
-    pub fn generate(&mut self, f: &mut BufWriter<File>, gen_tree: GenTree) -> Result<(), Error> {
+    pub fn generate(&mut self, f: &mut BufWriter<File>, program: Program) -> Result<(), Error> {
         writeln!(f, ".intel_syntax noprefix")?;
         writeln!(f, ".globl main")?;
         writeln!(f, "main:")?;
         self.generate_push_with_reg(f, Reg::Rbp)?;
         writeln!(f, "\tmov {}, {}", Reg::Rbp.qword(), Reg::Rsp.qword())?;
-        let offset = if gen_tree.offset % 16 == 0 {
-            gen_tree.offset
+        let offset = if program.offset % 16 == 0 {
+            program.offset
         } else {
-            gen_tree.offset + gen_tree.offset % 16
+            program.offset + program.offset % 16
         };
         writeln!(f, "\tsub {}, {}", Reg::Rsp.qword(), offset)?;
 
-        for stmt in gen_tree.stmts.into_iter() {
+        for stmt in program.stmts.into_iter() {
             self.generate_stmt(f, stmt)?;
         }
 
@@ -43,22 +42,22 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_stmt(&mut self, f: &mut BufWriter<File>, stmt: GenStmt) -> Result<(), Error> {
+    fn generate_stmt(&mut self, f: &mut BufWriter<File>, stmt: Stmt) -> Result<(), Error> {
         match stmt.kind {
-            GenStmtKind::Expr { expr } => {
+            StmtKind::Expr { expr } => {
                 self.generate_stmt_expr(f, expr)?;
             }
-            GenStmtKind::Return { expr } => {
+            StmtKind::Return { expr } => {
                 self.generate_stmt_return(f, expr)?;
             }
-            GenStmtKind::If {
+            StmtKind::If {
                 condition_expr,
                 then_stmt,
                 else_stmt,
             } => {
                 self.generate_stmt_if(f, condition_expr, *then_stmt, *else_stmt)?;
             }
-            GenStmtKind::For {
+            StmtKind::For {
                 init_expr,
                 condition_expr,
                 delta_expr,
@@ -66,13 +65,13 @@ impl Generator {
             } => {
                 self.generate_stmt_for(f, init_expr, condition_expr, delta_expr, *run_stmt)?;
             }
-            GenStmtKind::While {
+            StmtKind::While {
                 condition_expr,
                 run_stmt,
             } => {
                 self.generate_stmt_while(f, condition_expr, *run_stmt)?;
             }
-            GenStmtKind::Cpd { stmts } => {
+            StmtKind::Cpd { stmts } => {
                 self.generate_stmt_cpd(f, stmts)?;
             }
         }
@@ -82,7 +81,7 @@ impl Generator {
     fn generate_stmt_return(
         &mut self,
         f: &mut BufWriter<File>,
-        expr: Option<GenExpr>,
+        expr: Option<Expr>,
     ) -> Result<(), Error> {
         if let Some(expr) = expr {
             self.generate_expr(f, expr)?;
@@ -95,7 +94,7 @@ impl Generator {
     fn generate_stmt_expr(
         &mut self,
         f: &mut BufWriter<File>,
-        expr: Option<GenExpr>,
+        expr: Option<Expr>,
     ) -> Result<(), Error> {
         if let Some(expr) = expr {
             self.generate_expr(f, expr)?;
@@ -107,9 +106,9 @@ impl Generator {
     fn generate_stmt_if(
         &mut self,
         f: &mut BufWriter<File>,
-        condition_expr: GenExpr,
-        then_stmt: GenStmt,
-        else_stmt: Option<GenStmt>,
+        condition_expr: Expr,
+        then_stmt: Stmt,
+        else_stmt: Option<Stmt>,
     ) -> Result<(), Error> {
         let label_num = self.label_num();
         self.generate_expr(f, condition_expr)?;
@@ -129,10 +128,10 @@ impl Generator {
     fn generate_stmt_for(
         &mut self,
         f: &mut BufWriter<File>,
-        init_expr: Option<GenExpr>,
-        condition_expr: GenExpr,
-        delta_expr: Option<GenExpr>,
-        run_stmt: GenStmt,
+        init_expr: Option<Expr>,
+        condition_expr: Expr,
+        delta_expr: Option<Expr>,
+        run_stmt: Stmt,
     ) -> Result<(), Error> {
         let label_num = self.label_num();
         if let Some(init_expr) = init_expr {
@@ -157,8 +156,8 @@ impl Generator {
     fn generate_stmt_while(
         &mut self,
         f: &mut BufWriter<File>,
-        condition_expr: GenExpr,
-        run_stmt: GenStmt,
+        condition_expr: Expr,
+        run_stmt: Stmt,
     ) -> Result<(), Error> {
         let label_num = self.label_num();
         writeln!(f, ".Lbegin{}:", label_num)?;
@@ -175,7 +174,7 @@ impl Generator {
     fn generate_stmt_cpd(
         &mut self,
         f: &mut BufWriter<File>,
-        stmts: Vec<GenStmt>,
+        stmts: Vec<Stmt>,
     ) -> Result<(), Error> {
         for stmt in stmts.into_iter() {
             self.generate_stmt(f, stmt)?;
@@ -183,40 +182,37 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_expr(&mut self, f: &mut BufWriter<File>, expr: GenExpr) -> Result<(), Error> {
+    fn generate_expr(&mut self, f: &mut BufWriter<File>, expr: Expr) -> Result<(), Error> {
         match expr.kind {
-            GenExprKind::Binary { op_kind, lhs, rhs } => {
+            ExprKind::Binary { op_kind, lhs, rhs } => {
                 self.generate_expr_binary(f, op_kind, *lhs, *rhs)?;
             }
-            GenExprKind::Assign { lhs, rhs } => {
-                self.generate_expr_assign(f, *lhs, *rhs)?;
+            ExprKind::Assign { op_kind, lhs, rhs } => {
+                self.generate_expr_assign(f, op_kind, *lhs, *rhs)?;
             }
-            GenExprKind::AssignOP { op_kind, lhs, rhs } => {
-                self.generate_expr_assign_op(f, op_kind, *lhs, *rhs)?;
-            }
-            GenExprKind::Comma { lhs, rhs } => {
+            ExprKind::Comma { lhs, rhs } => {
                 self.generate_expr(f, *lhs)?;
                 self.generate_pop(f, Reg::Rax)?;
                 self.generate_expr(f, *rhs)?;
             }
-            GenExprKind::Condition {
+            ExprKind::Condition {
                 condition,
                 then_expr,
                 else_expr,
             } => self.generate_expr_condition(f, *condition, *then_expr, *else_expr)?,
-            GenExprKind::PostfixIncrement { expr } => {
+            ExprKind::PostfixIncrement { expr } => {
                 self.generate_expr_postfix_increment(f, *expr)?
             }
-            GenExprKind::PostfixDecrement { expr } => {
+            ExprKind::PostfixDecrement { expr } => {
                 self.generate_expr_postfix_decrement(f, *expr)?
             }
-            GenExprKind::Var { .. } => {
+            ExprKind::Variable { .. } => {
                 self.generate_expr_var(f, expr)?;
             }
-            GenExprKind::Number { number } => {
+            ExprKind::Number { number } => {
                 self.generate_expr_number(f, number)?;
             }
-            GenExprKind::Func { name, args } => self.generate_expr_func(f, name, args)?,
+            ExprKind::Func { name, args } => self.generate_expr_func(f, name, args)?,
         }
         Ok(())
     }
@@ -224,9 +220,9 @@ impl Generator {
     fn generate_expr_binary(
         &mut self,
         f: &mut BufWriter<File>,
-        op_kind: GenBinaryOpKind,
-        lhs: GenExpr,
-        rhs: GenExpr,
+        op_kind: BinaryOpKind,
+        lhs: Expr,
+        rhs: Expr,
     ) -> Result<(), Error> {
         self.generate_expr(f, lhs)?;
         self.generate_expr(f, rhs)?;
@@ -239,7 +235,7 @@ impl Generator {
     fn generate_expr_binary_with_reg(
         &mut self,
         f: &mut BufWriter<File>,
-        op_kind: GenBinaryOpKind,
+        op_kind: BinaryOpKind,
         lhs: Reg,
         rhs: Reg,
     ) -> Result<(), Error> {
@@ -250,57 +246,57 @@ impl Generator {
             writeln!(f, "\tmov {}, {}", Reg::Rdi.qword(), rhs.qword())?;
         }
         match op_kind {
-            GenBinaryOpKind::Add => {
+            BinaryOpKind::Add => {
                 writeln!(f, "\tadd {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
             }
-            GenBinaryOpKind::Sub => {
+            BinaryOpKind::Sub => {
                 writeln!(f, "\tsub {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
             }
-            GenBinaryOpKind::Mul => {
+            BinaryOpKind::Mul => {
                 writeln!(f, "\timul {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
             }
-            GenBinaryOpKind::Div => {
+            BinaryOpKind::Div => {
                 writeln!(f, "\tcqo")?;
                 writeln!(f, "\tidiv {}", Reg::Rdi.qword())?;
             }
-            GenBinaryOpKind::Rem => {
+            BinaryOpKind::Rem => {
                 writeln!(f, "\tcqo")?;
                 writeln!(f, "\tidiv {}", Reg::Rdi.qword())?;
                 writeln!(f, "\tmov {}, {}", Reg::Rax.qword(), Reg::Rdx.qword())?;
             }
-            GenBinaryOpKind::BitAnd => {
+            BinaryOpKind::BitAnd => {
                 writeln!(f, "\tand {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
             }
-            GenBinaryOpKind::BitOr => {
+            BinaryOpKind::BitOr => {
                 writeln!(f, "\tor {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
             }
-            GenBinaryOpKind::BitXor => {
+            BinaryOpKind::BitXor => {
                 writeln!(f, "\txor {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
             }
-            GenBinaryOpKind::LShift => {
+            BinaryOpKind::LShift => {
                 writeln!(f, "\tmov {}, {}", Reg::Rcx.qword(), Reg::Rdi.qword())?;
                 writeln!(f, "\tshl {}, {}", Reg::Rax.qword(), Reg::Rcx.byte())?;
             }
-            GenBinaryOpKind::RShift => {
+            BinaryOpKind::RShift => {
                 writeln!(f, "\tmov {}, {}", Reg::Rcx.qword(), Reg::Rdi.qword())?;
                 writeln!(f, "\tshr {}, {}", Reg::Rax.qword(), Reg::Rcx.byte())?;
             }
-            GenBinaryOpKind::Lt => {
+            BinaryOpKind::Lt => {
                 writeln!(f, "\tcmp {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
                 writeln!(f, "\tsetl {}", Reg::Rax.byte())?;
                 writeln!(f, "\tmovzb {}, {}", Reg::Rax.qword(), Reg::Rax.byte())?;
             }
-            GenBinaryOpKind::LtEqual => {
+            BinaryOpKind::LtEqual => {
                 writeln!(f, "\tcmp {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
                 writeln!(f, "\tsetle {}", Reg::Rax.byte())?;
                 writeln!(f, "\tmovzb {}, {}", Reg::Rax.qword(), Reg::Rax.byte())?;
             }
-            GenBinaryOpKind::Eq => {
+            BinaryOpKind::Eq => {
                 writeln!(f, "\tcmp {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
                 writeln!(f, "\tsete {}", Reg::Rax.byte())?;
                 writeln!(f, "\tmovzb {}, {}", Reg::Rax.qword(), Reg::Rax.byte())?;
             }
-            GenBinaryOpKind::Ne => {
+            BinaryOpKind::Ne => {
                 writeln!(f, "\tcmp {}, {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
                 writeln!(f, "\tsetne {}", Reg::Rax.byte())?;
                 writeln!(f, "\tmovzb {}, {}", Reg::Rax.qword(), Reg::Rax.byte())?;
@@ -313,45 +309,39 @@ impl Generator {
     fn generate_expr_assign(
         &mut self,
         f: &mut BufWriter<File>,
-        lhs: GenExpr,
-        rhs: GenExpr,
+        op_kind: BinaryOpKind,
+        lhs: Expr,
+        rhs: Expr,
     ) -> Result<(), Error> {
-        self.generate_expr_left_var(f, lhs)?;
-        self.generate_expr(f, rhs)?;
-        self.generate_pop(f, Reg::Rdi)?;
-        self.generate_pop(f, Reg::Rax)?;
-        writeln!(f, "\tmov [{}], {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
-        self.generate_push_with_reg(f, Reg::Rdi)?;
-        Ok(())
-    }
-
-    fn generate_expr_assign_op(
-        &mut self,
-        f: &mut BufWriter<File>,
-        op_kind: GenBinaryOpKind,
-        lhs: GenExpr,
-        rhs: GenExpr,
-    ) -> Result<(), Error> {
-        self.generate_expr_left_var(f, lhs)?;
-        self.generate_expr(f, rhs)?;
-        self.generate_pop(f, Reg::Rdi)?;
-        self.generate_pop(f, Reg::Rax)?;
-        writeln!(f, "\tmov {}, [{}]", Reg::R8.qword(), Reg::Rax.qword())?;
-        self.generate_push_with_reg(f, Reg::Rax)?;
-        self.generate_expr_binary_with_reg(f, op_kind, Reg::R8, Reg::Rdi)?;
-        self.generate_pop(f, Reg::Rdi)?;
-        self.generate_pop(f, Reg::Rax)?;
-        writeln!(f, "\tmov [{}], {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
-        self.generate_push_with_reg(f, Reg::Rdi)?;
+        if op_kind == BinaryOpKind::Eq {
+            self.generate_expr_left_var(f, lhs)?;
+            self.generate_expr(f, rhs)?;
+            self.generate_pop(f, Reg::Rdi)?;
+            self.generate_pop(f, Reg::Rax)?;
+            writeln!(f, "\tmov {}, [{}]", Reg::R8.qword(), Reg::Rax.qword())?;
+            self.generate_push_with_reg(f, Reg::Rax)?;
+            self.generate_expr_binary_with_reg(f, op_kind, Reg::R8, Reg::Rdi)?;
+            self.generate_pop(f, Reg::Rdi)?;
+            self.generate_pop(f, Reg::Rax)?;
+            writeln!(f, "\tmov [{}], {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
+            self.generate_push_with_reg(f, Reg::Rdi)?;
+        } else {
+            self.generate_expr_left_var(f, lhs)?;
+            self.generate_expr(f, rhs)?;
+            self.generate_pop(f, Reg::Rdi)?;
+            self.generate_pop(f, Reg::Rax)?;
+            writeln!(f, "\tmov [{}], {}", Reg::Rax.qword(), Reg::Rdi.qword())?;
+            self.generate_push_with_reg(f, Reg::Rdi)?;
+        }
         Ok(())
     }
 
     fn generate_expr_condition(
         &mut self,
         f: &mut BufWriter<File>,
-        condition: GenExpr,
-        then_expr: GenExpr,
-        else_expr: GenExpr,
+        condition: Expr,
+        then_expr: Expr,
+        else_expr: Expr,
     ) -> Result<(), Error> {
         let label_num = self.label_num();
         self.generate_expr(f, condition)?;
@@ -369,7 +359,7 @@ impl Generator {
     fn generate_expr_postfix_increment(
         &mut self,
         f: &mut BufWriter<File>,
-        expr: GenExpr,
+        expr: Expr,
     ) -> Result<(), Error> {
         self.generate_expr_left_var(f, expr)?;
         self.generate_pop(f, Reg::Rdi)?;
@@ -383,7 +373,7 @@ impl Generator {
     fn generate_expr_postfix_decrement(
         &mut self,
         f: &mut BufWriter<File>,
-        expr: GenExpr,
+        expr: Expr,
     ) -> Result<(), Error> {
         self.generate_expr_left_var(f, expr)?;
         self.generate_pop(f, Reg::Rdi)?;
@@ -397,8 +387,8 @@ impl Generator {
     fn generate_expr_func(
         &mut self,
         f: &mut BufWriter<File>,
-        name: GenFuncCallKind,
-        args: Vec<GenExpr>,
+        name: FuncCallKind,
+        args: Vec<Expr>,
     ) -> Result<(), Error> {
         let arg_len = args.len();
         let stack: usize = if 6 < arg_len { arg_len - 6 } else { 0 };
@@ -409,11 +399,11 @@ impl Generator {
         }
         self.generate_expr_func_args(f, args)?;
         match name {
-            GenFuncCallKind::Label { name } => {
+            FuncCallKind::Label { name } => {
                 self.generate_set_func_args(f, arg_len)?;
                 writeln!(f, "\tcall {}", name)?;
             }
-            GenFuncCallKind::Expr { expr } => {
+            FuncCallKind::Expr { expr } => {
                 self.generate_expr(f, *expr)?;
                 self.generate_pop(f, Reg::R10)?;
                 self.generate_set_func_args(f, arg_len)?;
@@ -434,7 +424,7 @@ impl Generator {
     fn generate_expr_func_args(
         &mut self,
         f: &mut BufWriter<File>,
-        args: Vec<GenExpr>,
+        args: Vec<Expr>,
     ) -> Result<(), Error> {
         for arg in args.into_iter().rev() {
             self.generate_expr(f, arg)?;
@@ -454,13 +444,9 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_expr_left_var(
-        &mut self,
-        f: &mut BufWriter<File>,
-        expr: GenExpr,
-    ) -> Result<(), Error> {
+    fn generate_expr_left_var(&mut self, f: &mut BufWriter<File>, expr: Expr) -> Result<(), Error> {
         match expr.kind {
-            GenExprKind::Var { var } => {
+            ExprKind::Variable { var } => {
                 writeln!(f, "\tmov {}, {}", Reg::Rax.qword(), Reg::Rbp.qword())?;
                 writeln!(f, "\tsub {}, {}", Reg::Rax.qword(), var.offset)?;
             }
@@ -470,7 +456,7 @@ impl Generator {
         Ok(())
     }
 
-    fn generate_expr_var(&mut self, f: &mut BufWriter<File>, expr: GenExpr) -> Result<(), Error> {
+    fn generate_expr_var(&mut self, f: &mut BufWriter<File>, expr: Expr) -> Result<(), Error> {
         self.generate_expr_left_var(f, expr)?;
         self.generate_pop(f, Reg::Rax)?;
         writeln!(f, "\tmov {}, [{}]", Reg::Rax.qword(), Reg::Rax.qword())?;

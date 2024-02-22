@@ -4,21 +4,21 @@ use crate::{
     error::Error,
     file::position::Position,
     parse::{
-        expr::Expr,
-        expr_kind::{AssignOpKind, BinaryOpKind, ExprKind},
-        stmt::Stmt,
-        stmt_kind::StmtKind,
-        syntax_tree::SyntaxTree,
+        row_expr::{RowAssignOpKind, RowBinaryOpKind, RowExpr, RowExprKind},
+        row_program::RowProgram,
+        row_stmt::{RowStmt, RowStmtKind},
     },
 };
 
 use super::{
-    gen_expr::GenExpr, gen_expr_kind::GenBinaryOpKind, gen_stmt::GenStmt, gen_tree::GenTree,
-    var::Var,
+    expr::{BinaryOpKind, Expr},
+    program::Program,
+    stmt::Stmt,
+    variable::Variable,
 };
 
 pub struct Analyzer {
-    var: BTreeMap<String, Var>,
+    var: BTreeMap<String, Variable>,
     offset: usize,
 }
 
@@ -30,26 +30,26 @@ impl Analyzer {
         }
     }
 
-    pub fn analyze(&mut self, syntax_tree: SyntaxTree) -> Result<GenTree, Error> {
-        let stmts: Result<VecDeque<GenStmt>, Error> = syntax_tree
+    pub fn analyze(&mut self, row_program: RowProgram) -> Result<Program, Error> {
+        let stmts: Result<VecDeque<Stmt>, Error> = row_program
             .stmts
             .into_iter()
             .map(|stmt| self.analyze_stmt(stmt))
             .collect();
-        Ok(GenTree::new(stmts?, self.offset))
+        Ok(Program::new(stmts?, self.offset))
     }
 
-    fn analyze_stmt(&mut self, stmt: Stmt) -> Result<GenStmt, Error> {
-        let position = stmt.position;
-        Ok(match stmt.kind {
-            StmtKind::Expr { expr } => self.analyze_stmt_expr(expr, position)?,
-            StmtKind::Return { expr } => self.analyze_stmt_return(expr, position)?,
-            StmtKind::If {
+    fn analyze_stmt(&mut self, row_stmt: RowStmt) -> Result<Stmt, Error> {
+        let position = row_stmt.position;
+        Ok(match row_stmt.kind {
+            RowStmtKind::Expr { expr } => self.analyze_stmt_expr(expr, position)?,
+            RowStmtKind::Return { expr } => self.analyze_stmt_return(expr, position)?,
+            RowStmtKind::If {
                 condition_expr,
                 then_stmt,
                 else_stmt,
             } => self.analyze_stmt_if(condition_expr, *then_stmt, *else_stmt, position)?,
-            StmtKind::For {
+            RowStmtKind::For {
                 init_expr,
                 condition_expr,
                 delta_expr,
@@ -57,87 +57,82 @@ impl Analyzer {
             } => {
                 self.analyze_stmt_for(init_expr, condition_expr, delta_expr, *run_stmt, position)?
             }
-            StmtKind::While {
+            RowStmtKind::While {
                 condition_expr,
                 run_stmt,
             } => self.analyze_stmt_while(condition_expr, *run_stmt, position)?,
-            StmtKind::Cpd { stmts } => self.analyze_stmt_cpd(stmts, position)?,
+            RowStmtKind::Cpd { stmts } => self.analyze_stmt_cpd(stmts, position)?,
         })
     }
 
     fn analyze_stmt_expr(
         &mut self,
-        expr: Option<Expr>,
+        row_expr: Option<RowExpr>,
         position: Position,
-    ) -> Result<GenStmt, Error> {
-        let expr = if let Some(expr) = expr {
-            Some(self.analyze_expr(expr)?)
+    ) -> Result<Stmt, Error> {
+        let expr = if let Some(row_expr) = row_expr {
+            Some(self.analyze_expr(row_expr)?)
         } else {
             None
         };
-        Ok(GenStmt::new_expr(expr, position))
+        Ok(Stmt::new_expr(expr, position))
     }
 
     fn analyze_stmt_return(
         &mut self,
-        expr: Option<Expr>,
+        row_expr: Option<RowExpr>,
         position: Position,
-    ) -> Result<GenStmt, Error> {
-        let expr = if let Some(expr) = expr {
-            Some(self.analyze_expr(expr)?)
+    ) -> Result<Stmt, Error> {
+        let expr = if let Some(row_expr) = row_expr {
+            Some(self.analyze_expr(row_expr)?)
         } else {
             None
         };
-        Ok(GenStmt::new_return(expr, position))
+        Ok(Stmt::new_return(expr, position))
     }
 
     fn analyze_stmt_if(
         &mut self,
-        condition_expr: Expr,
-        then_stmt: Stmt,
-        else_stmt: Option<Stmt>,
+        row_condition_expr: RowExpr,
+        row_then_stmt: RowStmt,
+        row_else_stmt: Option<RowStmt>,
         position: Position,
-    ) -> Result<GenStmt, Error> {
-        let condition_expr = self.analyze_expr(condition_expr)?;
-        let then_stmt = self.analyze_stmt(then_stmt)?;
-        let else_stmt = if let Some(else_stmt) = else_stmt {
-            Some(self.analyze_stmt(else_stmt)?)
+    ) -> Result<Stmt, Error> {
+        let condition_expr = self.analyze_expr(row_condition_expr)?;
+        let then_stmt = self.analyze_stmt(row_then_stmt)?;
+        let else_stmt = if let Some(row_else_stmt) = row_else_stmt {
+            Some(self.analyze_stmt(row_else_stmt)?)
         } else {
             None
         };
-        Ok(GenStmt::new_if(
-            condition_expr,
-            then_stmt,
-            else_stmt,
-            position,
-        ))
+        Ok(Stmt::new_if(condition_expr, then_stmt, else_stmt, position))
     }
 
     fn analyze_stmt_for(
         &mut self,
-        init_expr: Option<Expr>,
-        condition_expr: Option<Expr>,
-        delta_expr: Option<Expr>,
-        run_stmt: Stmt,
+        row_init_expr: Option<RowExpr>,
+        row_condition_expr: Option<RowExpr>,
+        row_delta_expr: Option<RowExpr>,
+        row_run_stmt: RowStmt,
         position: Position,
-    ) -> Result<GenStmt, Error> {
-        let init_expr = if let Some(init_expr) = init_expr {
-            Some(self.analyze_expr(init_expr)?)
+    ) -> Result<Stmt, Error> {
+        let init_expr = if let Some(row_init_expr) = row_init_expr {
+            Some(self.analyze_expr(row_init_expr)?)
         } else {
             None
         };
-        let condition_expr = if let Some(condition_expr) = condition_expr {
-            self.analyze_expr(condition_expr)?
+        let condition_expr = if let Some(row_condition_expr) = row_condition_expr {
+            self.analyze_expr(row_condition_expr)?
         } else {
-            GenExpr::new_number(1, position.clone())
+            Expr::new_number(1, position.clone())
         };
-        let delta_expr = if let Some(delta_expr) = delta_expr {
-            Some(self.analyze_expr(delta_expr)?)
+        let delta_expr = if let Some(row_delta_expr) = row_delta_expr {
+            Some(self.analyze_expr(row_delta_expr)?)
         } else {
             None
         };
-        let run_stmt = self.analyze_stmt(run_stmt)?;
-        Ok(GenStmt::new_for(
+        let run_stmt = self.analyze_stmt(row_run_stmt)?;
+        Ok(Stmt::new_for(
             init_expr,
             condition_expr,
             delta_expr,
@@ -148,75 +143,99 @@ impl Analyzer {
 
     fn analyze_stmt_while(
         &mut self,
-        condition_expr: Expr,
-        run_stmt: Stmt,
+        row_condition_expr: RowExpr,
+        row_run_stmt: RowStmt,
         position: Position,
-    ) -> Result<GenStmt, Error> {
-        let condition_expr = self.analyze_expr(condition_expr)?;
-        let run_stmt = self.analyze_stmt(run_stmt)?;
-        Ok(GenStmt::new_while(condition_expr, run_stmt, position))
+    ) -> Result<Stmt, Error> {
+        let condition_expr = self.analyze_expr(row_condition_expr)?;
+        let run_stmt = self.analyze_stmt(row_run_stmt)?;
+        Ok(Stmt::new_while(condition_expr, run_stmt, position))
     }
 
-    fn analyze_stmt_cpd(&mut self, stmts: Vec<Stmt>, position: Position) -> Result<GenStmt, Error> {
-        let stmts: Result<Vec<GenStmt>, Error> = stmts
+    fn analyze_stmt_cpd(&mut self, stmts: Vec<RowStmt>, position: Position) -> Result<Stmt, Error> {
+        let stmts: Result<Vec<Stmt>, Error> = stmts
             .into_iter()
             .map(|stmt| self.analyze_stmt(stmt))
             .collect();
-        Ok(GenStmt::new_cpd(stmts?, position))
+        Ok(Stmt::new_cpd(stmts?, position))
     }
 
-    fn analyze_expr(&mut self, expr: Expr) -> Result<GenExpr, Error> {
-        let position = expr.position;
-        Ok(match expr.kind {
-            ExprKind::Binary { op_kind, lhs, rhs } => {
-                self.analyze_expr_binary(op_kind, *lhs, *rhs, position)?
-            }
-            ExprKind::Assign { op_kind, lhs, rhs } => {
-                self.analyze_expr_assign(op_kind, *lhs, *rhs, position)?
-            }
-            ExprKind::Comma { lhs, rhs } => {
-                GenExpr::new_comma(self.analyze_expr(*lhs)?, self.analyze_expr(*rhs)?, position)
-            }
-            ExprKind::Condition {
-                condition,
-                then_expr,
-                else_expr,
-            } => GenExpr::new_condition(
-                self.analyze_expr(*condition)?,
-                self.analyze_expr(*then_expr)?,
-                self.analyze_expr(*else_expr)?,
+    fn analyze_expr(&mut self, row_expr: RowExpr) -> Result<Expr, Error> {
+        let position = row_expr.position;
+        Ok(match row_expr.kind {
+            RowExprKind::Binary {
+                row_binary_op_kind,
+                row_lhs_expr,
+                row_rhs_expr,
+            } => self.analyze_expr_binary(
+                row_binary_op_kind,
+                *row_lhs_expr,
+                *row_rhs_expr,
+                position,
+            )?,
+            RowExprKind::Assign {
+                row_assign_op_kind,
+                row_lhs_expr,
+                row_rhs_expr,
+            } => self.analyze_expr_assign(
+                row_assign_op_kind,
+                *row_lhs_expr,
+                *row_rhs_expr,
+                position,
+            )?,
+            RowExprKind::Comma {
+                row_lhs_expr,
+                row_rhs_expr,
+            } => Expr::new_comma(
+                self.analyze_expr(*row_lhs_expr)?,
+                self.analyze_expr(*row_rhs_expr)?,
                 position,
             ),
-            ExprKind::UnaryIncrement { expr } => GenExpr::new_assign_op(
-                GenBinaryOpKind::Add,
-                self.analyze_expr(*expr)?,
-                GenExpr::new_number(1, position.clone()),
+            RowExprKind::Condition {
+                row_condition_expr,
+                row_then_expr,
+                row_else_expr,
+            } => Expr::new_condition(
+                self.analyze_expr(*row_condition_expr)?,
+                self.analyze_expr(*row_then_expr)?,
+                self.analyze_expr(*row_else_expr)?,
                 position,
             ),
-            ExprKind::UnaryDecrement { expr } => GenExpr::new_assign_op(
-                GenBinaryOpKind::Sub,
-                self.analyze_expr(*expr)?,
-                GenExpr::new_number(1, position.clone()),
+            RowExprKind::UnaryIncrement { row_expr } => Expr::new_assign(
+                BinaryOpKind::Add,
+                self.analyze_expr(*row_expr)?,
+                Expr::new_number(1, position.clone()),
                 position,
             ),
-            ExprKind::PostfixIncrement { expr } => {
-                GenExpr::new_postfix_increment(self.analyze_expr(*expr)?, position)
+            RowExprKind::UnaryDecrement { row_expr } => Expr::new_assign(
+                BinaryOpKind::Sub,
+                self.analyze_expr(*row_expr)?,
+                Expr::new_number(1, position.clone()),
+                position,
+            ),
+            RowExprKind::PostfixIncrement { row_expr } => {
+                Expr::new_postfix_increment(self.analyze_expr(*row_expr)?, position)
             }
-            ExprKind::PostfixDecrement { expr } => {
-                GenExpr::new_postfix_decrement(self.analyze_expr(*expr)?, position)
+            RowExprKind::PostfixDecrement { row_expr } => {
+                Expr::new_postfix_decrement(self.analyze_expr(*row_expr)?, position)
             }
-            ExprKind::Identifier { name } => {
-                let var = self.get_var(name);
-                GenExpr::new_var(var, position)
+            RowExprKind::Identifier { ident } => {
+                let var = self.get_var(ident);
+                Expr::new_var(var, position)
             }
-            ExprKind::Number { number } => GenExpr::new_number(number, position),
-            ExprKind::Func { name, args } => {
-                let args: Result<Vec<GenExpr>, Error> =
-                    args.into_iter().map(|arg| self.analyze_expr(arg)).collect();
-                if let ExprKind::Identifier { name } = name.kind {
-                    GenExpr::new_func_label(name, args?, position)
+            RowExprKind::Number { number } => Expr::new_number(number, position),
+            RowExprKind::Func {
+                row_name_expr,
+                row_args_expr,
+            } => {
+                let args: Result<Vec<Expr>, Error> = row_args_expr
+                    .into_iter()
+                    .map(|arg| self.analyze_expr(arg))
+                    .collect();
+                if let RowExprKind::Identifier { ident } = row_name_expr.kind {
+                    Expr::new_func_label(ident, args?, position)
                 } else {
-                    GenExpr::new_func_expr(self.analyze_expr(*name)?, args?, position)
+                    Expr::new_func_expr(self.analyze_expr(*row_name_expr)?, args?, position)
                 }
             }
         })
@@ -224,40 +243,40 @@ impl Analyzer {
 
     fn analyze_expr_binary(
         &mut self,
-        op_kind: BinaryOpKind,
-        lhs: Expr,
-        rhs: Expr,
+        row_binary_op_kind: RowBinaryOpKind,
+        row_lhs_expr: RowExpr,
+        row_rhs_expr: RowExpr,
         position: Position,
-    ) -> Result<GenExpr, Error> {
-        Ok(match op_kind {
-            BinaryOpKind::LogicAnd => GenExpr::new_condition(
-                self.analyze_expr(lhs)?,
-                self.analyze_expr(rhs)?,
-                GenExpr::new_number(0, position.clone()),
+    ) -> Result<Expr, Error> {
+        Ok(match row_binary_op_kind {
+            RowBinaryOpKind::LogicAnd => Expr::new_condition(
+                self.analyze_expr(row_lhs_expr)?,
+                self.analyze_expr(row_rhs_expr)?,
+                Expr::new_number(0, position.clone()),
                 position,
             ),
-            BinaryOpKind::LogicOr => GenExpr::new_condition(
-                self.analyze_expr(lhs)?,
-                GenExpr::new_number(1, position.clone()),
-                self.analyze_expr(rhs)?,
+            RowBinaryOpKind::LogicOr => Expr::new_condition(
+                self.analyze_expr(row_lhs_expr)?,
+                Expr::new_number(1, position.clone()),
+                self.analyze_expr(row_rhs_expr)?,
                 position,
             ),
-            BinaryOpKind::Gt => GenExpr::new_binary(
-                GenBinaryOpKind::Lt,
-                self.analyze_expr(rhs)?,
-                self.analyze_expr(lhs)?,
+            RowBinaryOpKind::Gt => Expr::new_binary(
+                BinaryOpKind::Lt,
+                self.analyze_expr(row_rhs_expr)?,
+                self.analyze_expr(row_lhs_expr)?,
                 position,
             ),
-            BinaryOpKind::GtEqual => GenExpr::new_binary(
-                GenBinaryOpKind::LtEqual,
-                self.analyze_expr(rhs)?,
-                self.analyze_expr(lhs)?,
+            RowBinaryOpKind::GtEqual => Expr::new_binary(
+                BinaryOpKind::LtEqual,
+                self.analyze_expr(row_rhs_expr)?,
+                self.analyze_expr(row_lhs_expr)?,
                 position,
             ),
-            op_kind => GenExpr::new_binary(
-                op_kind.convert_to_gen()?,
-                self.analyze_expr(lhs)?,
-                self.analyze_expr(rhs)?,
+            op_kind => Expr::new_binary(
+                BinaryOpKind::from_row_binary_op_kind(op_kind)?,
+                self.analyze_expr(row_lhs_expr)?,
+                self.analyze_expr(row_rhs_expr)?,
                 position,
             ),
         })
@@ -265,26 +284,23 @@ impl Analyzer {
 
     fn analyze_expr_assign(
         &mut self,
-        op_kind: AssignOpKind,
-        lhs: Expr,
-        rhs: Expr,
+        row_assign_op_kind: RowAssignOpKind,
+        row_lhs_expr: RowExpr,
+        row_rhs_expr: RowExpr,
         position: Position,
-    ) -> Result<GenExpr, Error> {
-        let lhs = self.analyze_expr(lhs)?;
-        let rhs = self.analyze_expr(rhs)?;
-        if op_kind == AssignOpKind::Equal {
-            return Ok(GenExpr::new_assign(lhs, rhs, position));
-        }
-        let op_kind = op_kind.convert_to_binary()?;
-        Ok(GenExpr::new_assign_op(op_kind, lhs, rhs, position))
+    ) -> Result<Expr, Error> {
+        let lhs = self.analyze_expr(row_lhs_expr)?;
+        let rhs = self.analyze_expr(row_rhs_expr)?;
+        let binary_op_kind = BinaryOpKind::from_row_assign_op_kind(row_assign_op_kind)?;
+        Ok(Expr::new_assign(binary_op_kind, lhs, rhs, position))
     }
 
-    fn get_var(&mut self, name: String) -> Var {
+    fn get_var(&mut self, name: String) -> Variable {
         if let Some(var) = self.var.get(&name) {
             var.clone()
         } else {
             self.offset += 8;
-            let var = Var::new(self.offset);
+            let var = Variable::new(self.offset);
             self.var.insert(name, var.clone());
             var
         }
