@@ -55,7 +55,8 @@ jobs:
           toolchain: stable
           components: rustfmt
 
-      - uses: actions-rs/cargo@v1
+      - name: Run fmt
+        uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
@@ -82,7 +83,8 @@ jobs:
           toolchain: stable
           components: clippy
 
-      - uses: actions-rs/cargo@v1
+      - name: Run clippy
+        uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: -- -D warnings
@@ -108,6 +110,7 @@ jobs:
         with:
           toolchain: stable
 
-      - uses: actions-rs/cargo@v1
+      - name: Run test
+        uses: actions-rs/cargo@v1
         with:
           command: test
