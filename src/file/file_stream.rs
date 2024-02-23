@@ -1,7 +1,6 @@
-use super::file_info::FileInfo;
-use super::position::Position;
-use std::collections::VecDeque;
-use std::rc::Rc;
+use std::{collections::VecDeque, rc::Rc};
+
+use super::{file_info::FileInfo, position::Position};
 
 pub struct FileStream {
     chars: VecDeque<(Position, char)>,

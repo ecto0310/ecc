@@ -1,6 +1,6 @@
 use crate::file::position::Position;
 
-use super::{expr::Expr, stmt_kind::StmtKind};
+use super::expr::Expr;
 
 #[derive(Debug, Clone)]
 pub struct Stmt {
@@ -41,7 +41,7 @@ impl Stmt {
 
     pub fn new_for(
         init_expr: Option<Expr>,
-        condition_expr: Option<Expr>,
+        condition_expr: Expr,
         delta_expr: Option<Expr>,
         run_stmt: Stmt,
         position: Position,
@@ -73,4 +73,32 @@ impl Stmt {
             position,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum StmtKind {
+    Expr {
+        expr: Option<Expr>,
+    },
+    Return {
+        expr: Option<Expr>,
+    },
+    If {
+        condition_expr: Expr,
+        then_stmt: Box<Stmt>,
+        else_stmt: Box<Option<Stmt>>,
+    },
+    For {
+        init_expr: Option<Expr>,
+        condition_expr: Expr,
+        delta_expr: Option<Expr>,
+        run_stmt: Box<Stmt>,
+    },
+    While {
+        condition_expr: Expr,
+        run_stmt: Box<Stmt>,
+    },
+    Cpd {
+        stmts: Vec<Stmt>,
+    },
 }

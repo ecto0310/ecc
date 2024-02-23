@@ -1,5 +1,6 @@
-use super::file_info::FileInfo;
 use std::{fmt, rc::Rc};
+
+use super::file_info::FileInfo;
 
 #[derive(Clone, Debug)]
 pub struct Position {

@@ -1,4 +1,3 @@
-use crate::error::Error;
 use std::io::Read;
 
 #[derive(Debug, Clone)]
@@ -8,20 +7,13 @@ pub struct FileInfo {
 }
 
 impl FileInfo {
-    pub fn new(name: String) -> Result<Self, Error> {
-        let mut file = match std::fs::File::open(&name) {
-            Ok(file) => file,
-            Err(error) => return Err(Error::new_io(error)),
-        };
+    pub fn new(name: String) -> anyhow::Result<Self> {
+        let mut file = std::fs::File::open(&name)?;
 
         let mut code = String::new();
-        match file.read_to_string(&mut code) {
-            Ok(_) => {
-                code.push('\n');
-                Ok(Self { name, code })
-            }
-            Err(error) => Err(Error::new_io(error)),
-        }
+        file.read_to_string(&mut code)?;
+        code.push('\n');
+        Ok(Self { name, code })
     }
 
     pub fn get_name(&self) -> &str {
