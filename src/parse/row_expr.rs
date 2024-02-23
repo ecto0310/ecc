@@ -210,9 +210,9 @@ pub enum RowBinaryOpKind {
     /// greater-than-or-equal-to operator ('>=')
     GtEqual,
     /// equality operator ('==')
-    Eq,
+    Equal,
     /// inequality operator ('!=')
-    Ne,
+    NotEqual,
 }
 
 #[derive(Debug, Clone, PartialEq)]

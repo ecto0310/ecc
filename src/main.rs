@@ -4,16 +4,15 @@ mod generate;
 mod parse;
 mod tokenize;
 
-use analyze::analyzer::Analyzer;
-use file::file_info::FileInfo;
-use file::file_stream::FileStream;
-use generate::generator::Generator;
-use parse::parser::Parser;
-use std::fs::File;
-use std::io::BufWriter;
-use std::rc::Rc;
-use tokenize::token_stream::TokenStream;
-use tokenize::tokenizer::Tokenizer;
+use std::{fs::File, io::BufWriter, rc::Rc};
+
+use crate::{
+    analyze::analyzer::Analyzer,
+    file::{file_info::FileInfo, file_stream::FileStream},
+    generate::generator::Generator,
+    parse::parser::Parser,
+    tokenize::{token_stream::TokenStream, tokenizer::Tokenizer},
+};
 
 fn main() {
     let source_paths: Vec<String> = std::env::args().collect();

@@ -183,9 +183,9 @@ pub enum BinaryOpKind {
     /// less-than-or-equal-to operator ('<=')
     LtEqual,
     /// equality operator ('==')
-    Eq,
+    Equal,
     /// inequality operator ('!=')
-    Ne,
+    NotEqual,
 }
 
 impl BinaryOpKind {
@@ -207,14 +207,14 @@ impl BinaryOpKind {
             RowBinaryOpKind::Gt => Ok(Self::Lt),
             RowBinaryOpKind::LtEqual => Ok(Self::LtEqual),
             RowBinaryOpKind::GtEqual => Ok(Self::LtEqual),
-            RowBinaryOpKind::Eq => Ok(Self::Eq),
-            RowBinaryOpKind::Ne => Ok(Self::Ne),
+            RowBinaryOpKind::Equal => Ok(Self::Equal),
+            RowBinaryOpKind::NotEqual => Ok(Self::NotEqual),
         }
     }
 
     pub fn from_row_assign_op_kind(row: RowAssignOpKind) -> anyhow::Result<Self> {
         match row {
-            RowAssignOpKind::Equal => Ok(Self::Eq),
+            RowAssignOpKind::Equal => Ok(Self::Equal),
             RowAssignOpKind::MulEqual => Ok(Self::Mul),
             RowAssignOpKind::DivEqual => Ok(Self::Div),
             RowAssignOpKind::RemEqual => Ok(Self::Rem),

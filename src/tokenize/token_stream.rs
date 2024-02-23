@@ -1,8 +1,10 @@
+use std::collections::VecDeque;
+
+use anyhow::anyhow;
+
 use crate::file::position::Position;
 
 use super::{token::Token, token_kind::TokenKind};
-use anyhow::anyhow;
-use std::collections::VecDeque;
 
 #[derive(Clone)]
 pub struct TokenStream {

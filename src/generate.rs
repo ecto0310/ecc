@@ -1,2 +1,2 @@
 pub mod generator;
-pub mod reg;
+pub mod register;

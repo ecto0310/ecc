@@ -6,6 +6,7 @@ use super::row_stmt::RowStmt;
 pub struct RowProgram {
     pub stmts: VecDeque<RowStmt>,
 }
+
 impl RowProgram {
     pub fn new(stmts: VecDeque<RowStmt>) -> Self {
         Self { stmts }
